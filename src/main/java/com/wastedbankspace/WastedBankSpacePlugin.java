@@ -417,7 +417,8 @@ public class WastedBankSpacePlugin extends Plugin
 			}
 			updateWastedBankSpace();
 			processIgnoreListChanged(panel.getFilterdItemsText());
-		} else if (eventKey.equals(WastedBankSpaceConfig.BANK_TAG_TAB_KEY)) {
+		} else if (eventKey.equals(WastedBankSpaceConfig.BANK_TAG_TAB_KEY)
+			|| eventKey.equals(WastedBankSpaceConfig.BANK_TAG_PLACEHOLDERS_KEY)) {
 			clientThread.invokeLater(bankTag::sync);
 		} else if(eventKey.equals(WastedBankSpaceConfig.FILTER_ENABLED_CHECK_KEY) || eventKey.equals(WastedBankSpaceConfig.BIS_FILTER_ENABLED_CHECK_KEY)){
 			//Moderate jank to reforce filter and BIS check. TODO These should be separated into two functions
