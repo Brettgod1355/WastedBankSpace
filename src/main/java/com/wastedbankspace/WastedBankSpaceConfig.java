@@ -29,6 +29,7 @@
 package com.wastedbankspace;
 
 import com.wastedbankspace.banktag.WastedBankTag;
+import com.wastedbankspace.ui.overlay.HouseIcon;
 import com.wastedbankspace.ui.overlay.OverlayImage;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -70,6 +71,7 @@ public interface WastedBankSpaceConfig extends Config
 
 	/* Bank Interface Keys */
 	String BANK_TAG_TAB_KEY = "bankTagTab";
+	String BANK_TAG_PLACEHOLDERS_KEY = "bankTagPlaceholders";
 
 	static Set<String> getStorageLocationKeys()
 	{
@@ -181,6 +183,31 @@ public interface WastedBankSpaceConfig extends Config
 	default boolean houseIconInInventory()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "houseIcon",
+		name = "House Icon",
+		description = "Icon shown on items already stored in your POH",
+		position = 2,
+		section = alreadyInHouseConfig
+	)
+	default HouseIcon houseIcon()
+	{
+		return HouseIcon.TELEPORT_SPELL;
+	}
+
+	@ConfigItem(
+		keyName = "houseIconReplacesMarker",
+		name = "Replace Marker With House Icon",
+		description = "For items already stored in your POH, show only the house icon, in the bottom-right where the"
+			+ " overlay image normally goes, instead of both icons",
+		position = 3,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconReplacesMarker()
+	{
+		return false;
 	}
 
 	@ConfigItem(keyName = FILTER_ENABLED_CHECK_KEY,
@@ -476,6 +503,30 @@ public interface WastedBankSpaceConfig extends Config
 		section = bankInterfaceConfig
 	)
 	default boolean bankTagTab()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "markPlaceholders",
+		name = "Mark Placeholders",
+		description = "Also show the overlay image and house icon on bank placeholders of storable items",
+		position = 2,
+		section = bankInterfaceConfig
+	)
+	default boolean markPlaceholders()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = BANK_TAG_PLACEHOLDERS_KEY,
+		name = "Show Placeholders in Wasted Tab",
+		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag tab",
+		position = 3,
+		section = bankInterfaceConfig
+	)
+	default boolean bankTagPlaceholders()
 	{
 		return true;
 	}
