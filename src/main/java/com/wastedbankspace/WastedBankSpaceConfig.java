@@ -29,6 +29,7 @@
 package com.wastedbankspace;
 
 import com.wastedbankspace.banktag.WastedBankTag;
+import com.wastedbankspace.ui.overlay.HouseIcon;
 import com.wastedbankspace.ui.overlay.OverlayImage;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -70,6 +71,7 @@ public interface WastedBankSpaceConfig extends Config
 
 	/* Bank Interface Keys */
 	String BANK_TAG_TAB_KEY = "bankTagTab";
+	String BANK_TAG_PLACEHOLDERS_KEY = "bankTagPlaceholders";
 
 	static Set<String> getStorageLocationKeys()
 	{
@@ -145,6 +147,65 @@ public interface WastedBankSpaceConfig extends Config
 		section = inventoryEquipmentConfig
 	)
 	default boolean markEquippedItems()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Already In House",
+		description = "Mark flagged items you already have stored in your POH costume room."
+			+ " Open any costume room storage in your house to update what's stored.",
+		position = 4
+	)
+	String alreadyInHouseConfig = "alreadyInHouseConfig";
+
+	@ConfigItem(
+		keyName = "houseIconInBank",
+		name = "House Icon in Bank",
+		description = "Show a house icon on flagged bank items you already have stored in your POH costume room"
+			+ " (treasure chest, armour case, magic wardrobe, cape rack, toy box, fancy dress box)",
+		position = 0,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconInBank()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "houseIconInInventory",
+		name = "House Icon in Inventory",
+		description = "Show a house icon on flagged inventory and worn equipment items you already have stored in your"
+			+ " POH costume room. Works independently of the Inventory & Equipment options.",
+		position = 1,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconInInventory()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "houseIcon",
+		name = "House Icon",
+		description = "Icon shown on items already stored in your POH",
+		position = 2,
+		section = alreadyInHouseConfig
+	)
+	default HouseIcon houseIcon()
+	{
+		return HouseIcon.TELEPORT_SPELL;
+	}
+
+	@ConfigItem(
+		keyName = "houseIconReplacesMarker",
+		name = "Replace Marker With House Icon",
+		description = "For items already stored in your POH, show only the house icon, in the bottom-right where the"
+			+ " overlay image normally goes, instead of both icons",
+		position = 3,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconReplacesMarker()
 	{
 		return false;
 	}
@@ -442,6 +503,30 @@ public interface WastedBankSpaceConfig extends Config
 		section = bankInterfaceConfig
 	)
 	default boolean bankTagTab()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "markPlaceholders",
+		name = "Mark Placeholders",
+		description = "Also show the overlay image and house icon on bank placeholders of storable items",
+		position = 2,
+		section = bankInterfaceConfig
+	)
+	default boolean markPlaceholders()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = BANK_TAG_PLACEHOLDERS_KEY,
+		name = "Show Placeholders in Wasted Tab",
+		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag tab",
+		position = 3,
+		section = bankInterfaceConfig
+	)
+	default boolean bankTagPlaceholders()
 	{
 		return true;
 	}

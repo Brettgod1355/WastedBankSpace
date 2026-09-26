@@ -33,6 +33,7 @@ import com.wastedbankspace.banktag.WastedBankTag;
 import com.wastedbankspace.model.StorableItem;
 import com.wastedbankspace.model.StorageLocationEnabler;
 import com.wastedbankspace.model.StorageLocations;
+import com.wastedbankspace.poh.PohStorageTracker;
 import com.wastedbankspace.model.locations.*;
 import com.wastedbankspace.ui.WastedBankSpacePanel;
 import com.wastedbankspace.ui.overlay.BankTagTabOverlay;
@@ -52,6 +53,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
@@ -105,6 +107,9 @@ public class WastedBankSpacePlugin extends Plugin
 
 	@Inject
 	private WastedBankTag bankTag;
+
+	@Inject
+	private PohStorageTracker pohStorage;
 
 	@Inject
 	private TooltipManager tooltipManager;
@@ -226,6 +231,7 @@ public class WastedBankSpacePlugin extends Plugin
 		overlayManager.add(storageItemOverlay);
 		overlayManager.add(bankTagTabOverlay);
 		bankTag.startUp();
+		pohStorage.load();
 
 		log.debug("Attempting to prepare WastedBankSpace upon startup.");
 		if (!prepared)
@@ -345,8 +351,16 @@ public class WastedBankSpacePlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
+	{
+		pohStorage.load();
+	}
+
+	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
+		pohStorage.onItemContainerChanged(event);
+
 		if (event.getContainerId() == InventoryID.BANK.getId())
 		{
 			isBankOpen = true;
@@ -403,7 +417,8 @@ public class WastedBankSpacePlugin extends Plugin
 			}
 			updateWastedBankSpace();
 			processIgnoreListChanged(panel.getFilterdItemsText());
-		} else if (eventKey.equals(WastedBankSpaceConfig.BANK_TAG_TAB_KEY)) {
+		} else if (eventKey.equals(WastedBankSpaceConfig.BANK_TAG_TAB_KEY)
+			|| eventKey.equals(WastedBankSpaceConfig.BANK_TAG_PLACEHOLDERS_KEY)) {
 			clientThread.invokeLater(bankTag::sync);
 		} else if(eventKey.equals(WastedBankSpaceConfig.FILTER_ENABLED_CHECK_KEY) || eventKey.equals(WastedBankSpaceConfig.BIS_FILTER_ENABLED_CHECK_KEY)){
 			//Moderate jank to reforce filter and BIS check. TODO These should be separated into two functions
