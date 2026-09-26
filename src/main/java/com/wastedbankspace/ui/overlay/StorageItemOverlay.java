@@ -39,8 +39,8 @@ import com.wastedbankspace.poh.PohStorageTracker;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetItem;
@@ -55,6 +55,8 @@ import net.runelite.client.util.ColorUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -72,8 +74,10 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	private final TooltipManager tooltipManager;
 	private final PohStorageTracker pohStorage;
 
-	/** Minimap house portal icon, drawn bottom-left on items already stored in the POH */
-	private BufferedImage houseIcon;
+	private final SpriteManager spriteManager;
+
+	/** Icons drawn bottom-left on items already stored in the POH, loaded on first use */
+	private final Map<HouseIcon, BufferedImage> houseIcons = new EnumMap<>(HouseIcon.class);
 
 	@Getter
 	private final Cache<Integer, BufferedImage> wastedSpaceImages = CacheBuilder.newBuilder()
@@ -91,8 +95,8 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		this.itemManager = itemManager;
 		this.tooltipManager = tooltipManager;
 		this.pohStorage = pohStorage;
+		this.spriteManager = spriteManager;
 		this.point = new Point();
-		spriteManager.getSpriteAsync(SpriteID.Mapfunction.HOUSE_PORTAL, 0, sprite -> houseIcon = sprite);
 		showOnBank();
 		showOnInventory();
 		showOnEquipment();
@@ -102,13 +106,22 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem itemWidget)
 	{
 		Set<Integer> items = plugin.getEnabledItems();
-
-		if (items.isEmpty() || !items.contains(itemId))
+		if (items.isEmpty())
 		{
 			return;
 		}
 
 		Area area = getArea(itemWidget.getWidget());
+		if (area == Area.BANK && config.markPlaceholders())
+		{
+			itemId = getPlaceholderItemId(itemId);
+		}
+
+		if (!items.contains(itemId))
+		{
+			return;
+		}
+
 		boolean showMarker = shouldMark(area);
 		boolean inHouse = pohStorage.isStored(itemId);
 		boolean showHouseIcon = inHouse && shouldShowHouseIcon(area);
@@ -127,15 +140,53 @@ public class StorageItemOverlay extends WidgetItemOverlay
 			tooltipManager.add(t);
 		}
 
-		if (showMarker)
+		// The house icon can take the marker's place in the bottom-right instead of sitting beside it
+		boolean replaceMarker = showHouseIcon && config.houseIconReplacesMarker();
+
+		if (showMarker && !replaceMarker)
 		{
 			renderRibbon(graphics, plugin.getOverlayImage().getImage(), bounds.x + bounds.width - 12, bounds.y + bounds.height - 12);
 		}
 
-		if (showHouseIcon && houseIcon != null)
+		if (showHouseIcon)
 		{
-			graphics.drawImage(houseIcon, bounds.x, bounds.y + bounds.height - HOUSE_ICON_SIZE, HOUSE_ICON_SIZE, HOUSE_ICON_SIZE, null);
+			renderHouseIcon(graphics, bounds, replaceMarker);
 		}
+	}
+
+	/**
+	 * Draws the configured house icon in the bottom-left (or bottom-right) corner, scaled to fit while keeping its
+	 * aspect ratio.
+	 */
+	private void renderHouseIcon(Graphics2D graphics, Rectangle bounds, boolean bottomRight)
+	{
+		HouseIcon selected = config.houseIcon();
+		BufferedImage icon = houseIcons.get(selected);
+		if (icon == null)
+		{
+			// Overlays render on the client thread, so the sprite can be read directly
+			icon = spriteManager.getSprite(selected.getSpriteId(), 0);
+			if (icon == null)
+			{
+				return;
+			}
+			houseIcons.put(selected, icon);
+		}
+
+		double scale = (double) HOUSE_ICON_SIZE / Math.max(icon.getWidth(), icon.getHeight());
+		int width = (int) Math.round(icon.getWidth() * scale);
+		int height = (int) Math.round(icon.getHeight() * scale);
+		int x = bottomRight ? bounds.x + bounds.width - width : bounds.x;
+		graphics.drawImage(icon, x, bounds.y + bounds.height - height, width, height, null);
+	}
+
+	/**
+	 * @return the real item a bank placeholder stands for, or the item id unchanged if it isn't a placeholder
+	 */
+	private int getPlaceholderItemId(int itemId)
+	{
+		ItemComposition composition = itemManager.getItemComposition(itemId);
+		return composition.getPlaceholderTemplateId() != -1 ? composition.getPlaceholderId() : itemId;
 	}
 
 	private enum Area
