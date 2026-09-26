@@ -149,6 +149,40 @@ public interface WastedBankSpaceConfig extends Config
 		return false;
 	}
 
+	@ConfigSection(
+		name = "Already In House",
+		description = "Mark flagged items you already have stored in your POH costume room."
+			+ " Open any costume room storage in your house to update what's stored.",
+		position = 4
+	)
+	String alreadyInHouseConfig = "alreadyInHouseConfig";
+
+	@ConfigItem(
+		keyName = "houseIconInBank",
+		name = "House Icon in Bank",
+		description = "Show a house icon on flagged bank items you already have stored in your POH costume room"
+			+ " (treasure chest, armour case, magic wardrobe, cape rack, toy box, fancy dress box)",
+		position = 0,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconInBank()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "houseIconInInventory",
+		name = "House Icon in Inventory",
+		description = "Show a house icon on flagged inventory and worn equipment items you already have stored in your"
+			+ " POH costume room. Works independently of the Inventory & Equipment options.",
+		position = 1,
+		section = alreadyInHouseConfig
+	)
+	default boolean houseIconInInventory()
+	{
+		return true;
+	}
+
 	@ConfigItem(keyName = FILTER_ENABLED_CHECK_KEY,
 		name = "Enable Filtering",
 		description = "Enable Item Filters and Blacklist",

@@ -35,15 +35,18 @@ import com.wastedbankspace.WastedBankSpaceConfig;
 import com.wastedbankspace.WastedBankSpacePlugin;
 import com.wastedbankspace.model.StorableItem;
 import com.wastedbankspace.model.StorageLocations;
+import com.wastedbankspace.poh.PohStorageTracker;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
@@ -58,6 +61,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class StorageItemOverlay extends WidgetItemOverlay
 {
+	private static final int HOUSE_ICON_SIZE = 13;
+
 	private final Point point;
 
 	private final Client client;
@@ -65,6 +70,10 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	private final WastedBankSpaceConfig config;
 	private final ItemManager itemManager;
 	private final TooltipManager tooltipManager;
+	private final PohStorageTracker pohStorage;
+
+	/** Minimap house portal icon, drawn bottom-left on items already stored in the POH */
+	private BufferedImage houseIcon;
 
 	@Getter
 	private final Cache<Integer, BufferedImage> wastedSpaceImages = CacheBuilder.newBuilder()
@@ -73,14 +82,17 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		.build();
 
 	@Inject
-	StorageItemOverlay(Client client, WastedBankSpacePlugin plugin, WastedBankSpaceConfig config, ItemManager itemManager, TooltipManager tooltipManager)
+	StorageItemOverlay(Client client, WastedBankSpacePlugin plugin, WastedBankSpaceConfig config, ItemManager itemManager,
+		TooltipManager tooltipManager, PohStorageTracker pohStorage, SpriteManager spriteManager)
 	{
 		this.client = client;
 		this.plugin = plugin;
 		this.config = config;
 		this.itemManager = itemManager;
 		this.tooltipManager = tooltipManager;
+		this.pohStorage = pohStorage;
 		this.point = new Point();
+		spriteManager.getSpriteAsync(SpriteID.Mapfunction.HOUSE_PORTAL, 0, sprite -> houseIcon = sprite);
 		showOnBank();
 		showOnInventory();
 		showOnEquipment();
@@ -91,10 +103,16 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	{
 		Set<Integer> items = plugin.getEnabledItems();
 
-		if (items.isEmpty()
-			|| !shouldMark(itemWidget.getWidget())
-			|| !items.contains(itemId)
-		)
+		if (items.isEmpty() || !items.contains(itemId))
+		{
+			return;
+		}
+
+		Area area = getArea(itemWidget.getWidget());
+		boolean showMarker = shouldMark(area);
+		boolean inHouse = pohStorage.isStored(itemId);
+		boolean showHouseIcon = inHouse && shouldShowHouseIcon(area);
+		if (!showMarker && !showHouseIcon)
 		{
 			return;
 		}
@@ -104,27 +122,74 @@ public class StorageItemOverlay extends WidgetItemOverlay
 
 		if (bounds.contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY()))
 		{
-			Tooltip t = new Tooltip(ColorUtil.prependColorTag("Store @ " + item.getLocation(), new Color(238, 238, 238)));
+			String text = (inHouse ? "Already stored @ " : "Store @ ") + item.getLocation();
+			Tooltip t = new Tooltip(ColorUtil.prependColorTag(text, new Color(238, 238, 238)));
 			tooltipManager.add(t);
 		}
 
-		renderRibbon(graphics, plugin.getOverlayImage().getImage(), bounds.x + bounds.width - 12, bounds.y + bounds.height - 12);
+		if (showMarker)
+		{
+			renderRibbon(graphics, plugin.getOverlayImage().getImage(), bounds.x + bounds.width - 12, bounds.y + bounds.height - 12);
+		}
+
+		if (showHouseIcon && houseIcon != null)
+		{
+			graphics.drawImage(houseIcon, bounds.x, bounds.y + bounds.height - HOUSE_ICON_SIZE, HOUSE_ICON_SIZE, HOUSE_ICON_SIZE, null);
+		}
 	}
 
-	/**
-	 * Bank items are always marked; inventory and worn equipment items only when enabled in the config.
-	 */
-	private boolean shouldMark(Widget widget)
+	private enum Area
+	{
+		BANK,
+		INVENTORY,
+		EQUIPMENT,
+		/** Other bank widgets, e.g. the worn equipment shown inside the bank */
+		NONE
+	}
+
+	private static Area getArea(Widget widget)
 	{
 		switch (WidgetUtil.componentToInterface(widget.getId()))
 		{
 			case InterfaceID.BANKMAIN:
 			case InterfaceID.SHARED_BANK:
-				return widget.getParentId() == ComponentID.BANK_ITEM_CONTAINER;
+				return widget.getParentId() == ComponentID.BANK_ITEM_CONTAINER ? Area.BANK : Area.NONE;
 			case InterfaceID.WORNITEMS:
+				return Area.EQUIPMENT;
+			default:
+				return Area.INVENTORY;
+		}
+	}
+
+	/**
+	 * Bank items are always marked; inventory and worn equipment items only when enabled in the config.
+	 */
+	private boolean shouldMark(Area area)
+	{
+		switch (area)
+		{
+			case BANK:
+				return true;
+			case INVENTORY:
+				return config.markInventoryItems();
+			case EQUIPMENT:
 				return config.markEquippedItems();
 			default:
-				return config.markInventoryItems();
+				return false;
+		}
+	}
+
+	private boolean shouldShowHouseIcon(Area area)
+	{
+		switch (area)
+		{
+			case BANK:
+				return config.houseIconInBank();
+			case INVENTORY:
+			case EQUIPMENT:
+				return config.houseIconInInventory();
+			default:
+				return false;
 		}
 	}
 
