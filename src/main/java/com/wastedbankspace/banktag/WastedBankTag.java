@@ -32,11 +32,13 @@ import com.google.common.base.Strings;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.banktags.BankTagsPlugin;
 import net.runelite.client.plugins.banktags.BankTagsService;
 import net.runelite.client.plugins.banktags.TagManager;
@@ -73,14 +75,16 @@ public class WastedBankTag
 	private final TagManager tagManager;
 	private final BankTagsService bankTagsService;
 	private final WastedBankSpaceConfig config;
+	private final ItemManager itemManager;
 
 	private volatile Set<Integer> items = Collections.emptySet();
 	private boolean registered = false;
 
 	@Inject
 	WastedBankTag(Client client, ClientThread clientThread, ConfigManager configManager, TagManager tagManager,
-		BankTagsService bankTagsService, WastedBankSpaceConfig config)
+		BankTagsService bankTagsService, WastedBankSpaceConfig config, ItemManager itemManager)
 	{
+		this.itemManager = itemManager;
 		this.client = client;
 		this.clientThread = clientThread;
 		this.configManager = configManager;
@@ -199,10 +203,27 @@ public class WastedBankTag
 	{
 		if (!registered)
 		{
-			tagManager.registerTag(TAG_NAME, itemId -> items.contains(itemId));
+			tagManager.registerTag(TAG_NAME, this::contains);
 			registered = true;
 			log.debug("Registered bank tag '{}'", TAG_NAME);
 		}
+	}
+
+	/**
+	 * Bank tags passes placeholders by their own item id, so map them back to the real item when enabled.
+	 * Called on the client thread.
+	 */
+	private boolean contains(int itemId)
+	{
+		if (config.bankTagPlaceholders())
+		{
+			ItemComposition composition = itemManager.getItemComposition(itemId);
+			if (composition.getPlaceholderTemplateId() != -1)
+			{
+				itemId = composition.getPlaceholderId();
+			}
+		}
+		return items.contains(itemId);
 	}
 
 	private void unregisterTag()
