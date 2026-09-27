@@ -6,4 +6,5 @@ build
 .classpath
 nbactions.xml
 nb-configuration.xml
-nbproject/__pycache__/
+nbproject/
+__pycache__/
