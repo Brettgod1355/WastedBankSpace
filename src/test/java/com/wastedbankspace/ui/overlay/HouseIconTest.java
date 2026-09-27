@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2021, Riley McGee
+ * Copyright (c) 2026, Brettgod1355
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,17 +26,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.wastedbankspace;
+package com.wastedbankspace.ui.overlay;
 
-import net.runelite.client.RuneLite;
-import net.runelite.client.externalplugins.ExternalPluginManager;
+import net.runelite.client.util.Text;
+import org.junit.Test;
 
-public class WastedBankSpacePluginTest
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+public class HouseIconTest
 {
-	@SuppressWarnings("unchecked") // loadBuiltin takes generic varargs
-	public static void main(String[] args) throws Exception
+	@Test
+	public void everyHouseIconUsesItsOwnSprite()
 	{
-		ExternalPluginManager.loadBuiltin(WastedBankSpacePlugin.class);
-		RuneLite.main(args);
+		Map<Integer, HouseIcon> bySprite = new HashMap<>();
+		for (HouseIcon icon : HouseIcon.values())
+		{
+			assertTrue(icon.name() + " has an invalid sprite id " + icon.getSpriteId(), icon.getSpriteId() >= 0);
+			HouseIcon previous = bySprite.put(icon.getSpriteId(), icon);
+			assertNull(previous + " and " + icon + " show the same sprite", previous);
+		}
+	}
+
+	@Test
+	public void dropdownShowsEachHouseIconByItsOwnName()
+	{
+		Set<String> labels = new HashSet<>();
+		for (HouseIcon icon : HouseIcon.values())
+		{
+			// RuneLite's config dropdown labels enum values with Text.titleCase
+			String label = Text.titleCase(icon);
+			assertEquals(icon.getName(), icon.toString());
+			assertEquals(icon.getName(), label);
+			assertFalse(icon.name() + " has a blank name", label.trim().isEmpty());
+			assertTrue("two house icons are both called " + label, labels.add(label));
+		}
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2021, Riley McGee
+ * Copyright (c) 2026, Brettgod1355
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,25 @@
 
 package com.wastedbankspace;
 
-import net.runelite.client.RuneLite;
-import net.runelite.client.externalplugins.ExternalPluginManager;
+import org.junit.Test;
 
-public class WastedBankSpacePluginTest
+import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+public class SidePanelIconTest
 {
-	@SuppressWarnings("unchecked") // loadBuiltin takes generic varargs
-	public static void main(String[] args) throws Exception
+	@Test
+	public void sidePanelIconLoads() throws ReflectiveOperationException
 	{
-		ExternalPluginManager.loadBuiltin(WastedBankSpacePlugin.class);
-		RuneLite.main(args);
+		// The icon is loaded when the plugin class loads, so a missing png stops the whole plugin from starting
+		Field field = WastedBankSpacePlugin.class.getDeclaredField("ICON");
+		field.setAccessible(true);
+		BufferedImage icon = (BufferedImage) field.get(null);
+
+		assertNotNull("side panel icon did not load", icon);
+		assertTrue("side panel icon is empty", icon.getWidth() > 0 && icon.getHeight() > 0);
 	}
 }
