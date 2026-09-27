@@ -33,6 +33,7 @@ import com.wastedbankspace.WastedBankSpacePlugin;
 import com.wastedbankspace.model.StorableItem;
 import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.model.locations.TreasureChest;
+import com.wastedbankspace.model.stash.StashUnit;
 import com.wastedbankspace.poh.PohStorageTracker;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
@@ -107,6 +108,9 @@ public class StorageItemOverlayTest
 	private static final int HOUSE_RIGHT_X = 123;
 	private static final int HOUSE_Y = 222;
 
+	/** The STASH sprite is already 13x13, so it's drawn unscaled */
+	private static final int STASH_SIZE = 13;
+
 	private static final Point MOUSE_INSIDE = new Point(110, 210);
 	/** Just past the slot's bottom-right corner */
 	private static final Point MOUSE_OUTSIDE = new Point(136, 232);
@@ -124,6 +128,8 @@ public class StorageItemOverlayTest
 
 	private Set<Integer> enabledItems;
 	private BufferedImage houseSprite;
+	/** Fully transparent, so trimming leaves it as it is */
+	private final BufferedImage stashSprite = new BufferedImage(STASH_SIZE, STASH_SIZE, BufferedImage.TYPE_INT_ARGB);
 	private StorageItemOverlay overlay;
 
 	@Before
@@ -251,6 +257,25 @@ public class StorageItemOverlayTest
 	private void verifyHouseIconAt(BufferedImage sprite, int x, int y, int width, int height)
 	{
 		verify(graphics).drawImage(same(sprite), eq(x), eq(y), eq(width), eq(height), isNull());
+	}
+
+	/** Every STASH unit that takes the item is filled, and the STASH icon is shown in the bank and inventory */
+	private void stashed()
+	{
+		List<StashUnit> units = List.of(StashUnit.NEAR_A_SHED_IN_LUMBRIDGE_SWAMP);
+		when(plugin.getStashUnits(ITEM_ID)).thenReturn(units);
+		when(plugin.isStashed(units)).thenReturn(true);
+		when(config.stashIconInBank()).thenReturn(true);
+		when(config.stashIconInInventory()).thenReturn(true);
+		when(config.stashIcon()).thenReturn(StashIcon.GREEN_TICK);
+		when(spriteManager.getSprite(StashIcon.GREEN_TICK.getSpriteId(), 0)).thenReturn(stashSprite);
+	}
+
+	/** The test item can also go in the POH costume room, so its STASH icon sits top-right, full size */
+	private void verifyStashIconTopRight()
+	{
+		verify(graphics).drawImage(same(stashSprite), eq(SLOT_X + SLOT_WIDTH - STASH_SIZE), eq(SLOT_Y),
+			eq(STASH_SIZE), eq(STASH_SIZE), isNull());
 	}
 
 	private List<String> tooltips()
@@ -470,25 +495,53 @@ public class StorageItemOverlayTest
 	}
 
 	@Test
-	public void inventoryItemInHouseGetsHouseIconEvenWhenInventoryMarkingOff()
+	public void inventoryItemInHouseGetsNothingWhenInventoryMarkingOff()
 	{
 		storedInHouse(ITEM_ID);
 		hover();
 
 		render(ITEM_ID, inventoryItem());
 
+		verifyNoInteractions(graphics);
+		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	@Test
+	public void wornItemInHouseGetsNothingWhenEquipmentMarkingOff()
+	{
+		storedInHouse(ITEM_ID);
+		hover();
+
+		render(ITEM_ID, wornItem());
+
+		verifyNoInteractions(graphics);
+		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	@Test
+	public void inventoryItemInHouseGetsHouseIconNextToMarkerWhenInventoryMarkingOn()
+	{
+		when(config.markInventoryItems()).thenReturn(true);
+		storedInHouse(ITEM_ID);
+		hover();
+
+		render(ITEM_ID, inventoryItem());
+
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 		assertEquals(List.of(alreadyStoredAt()), tooltips());
 	}
 
 	@Test
-	public void wornItemInHouseGetsHouseIconEvenWhenEquipmentMarkingOff()
+	public void wornItemInHouseGetsHouseIconNextToMarkerWhenEquipmentMarkingOn()
 	{
+		when(config.markEquippedItems()).thenReturn(true);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, wornItem());
 
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 	}
@@ -496,6 +549,8 @@ public class StorageItemOverlayTest
 	@Test
 	public void inventoryAndWornHouseIconsHiddenWhenHouseIconInInventoryOff()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
+		when(config.markEquippedItems()).thenReturn(true);
 		when(config.houseIconInInventory()).thenReturn(false);
 		storedInHouse(ITEM_ID);
 		hover();
@@ -503,18 +558,21 @@ public class StorageItemOverlayTest
 		render(ITEM_ID, inventoryItem());
 		render(ITEM_ID, wornItem());
 
-		verifyNoInteractions(graphics);
-		assertEquals(Collections.emptyList(), tooltips());
+		verify(graphics, times(2)).drawImage(same(OVERLAY_IMAGE.getIcon()), eq(MARKER_X), eq(MARKER_Y), isNull());
+		verifyNoMoreInteractions(graphics);
+		assertEquals(List.of(alreadyStoredAt(), alreadyStoredAt()), tooltips());
 	}
 
 	@Test
 	public void inventoryHouseIconDoesNotDependOnBankHouseIconOption()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
 		when(config.houseIconInBank()).thenReturn(false);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, inventoryItem());
 
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 	}
@@ -522,12 +580,14 @@ public class StorageItemOverlayTest
 	@Test
 	public void inventoryItemNotInHouseGetsNoHouseIcon()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
 		hover();
 
 		render(ITEM_ID, inventoryItem());
 
-		verifyNoInteractions(graphics);
-		assertEquals(Collections.emptyList(), tooltips());
+		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyNoMoreInteractions(graphics);
+		assertEquals(List.of(storeAt()), tooltips());
 	}
 
 	@Test
@@ -555,17 +615,15 @@ public class StorageItemOverlayTest
 		verifyNoMoreInteractions(graphics);
 	}
 
-	/** Stored items then show only the house icon, where the marker normally goes, even where markers are off */
 	@Test
-	public void houseIconReplacesMarkerAlsoMovesIconOnUnmarkedInventoryItems()
+	public void houseIconReplacingMarkerStillShowsNothingOnUnmarkedInventoryItems()
 	{
 		when(config.houseIconReplacesMarker()).thenReturn(true);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, inventoryItem());
 
-		verifyHouseIconAt(houseSprite, HOUSE_RIGHT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
-		verifyNoMoreInteractions(graphics);
+		verifyNoInteractions(graphics);
 	}
 
 	@Test
@@ -589,6 +647,60 @@ public class StorageItemOverlayTest
 		render(ITEM_ID, bankItem());
 
 		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyNoMoreInteractions(graphics);
+	}
+
+	// Already stashed
+
+	@Test
+	public void stashedBankItemGetsStashIconTopRight()
+	{
+		stashed();
+
+		render(ITEM_ID, bankItem());
+
+		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyStashIconTopRight();
+		verifyNoMoreInteractions(graphics);
+	}
+
+	@Test
+	public void stashedInventoryAndWornItemsGetNothingWhenMarkingOff()
+	{
+		stashed();
+		storedInHouse(ITEM_ID);
+		hover();
+
+		render(ITEM_ID, inventoryItem());
+		render(ITEM_ID, wornItem());
+
+		verifyNoInteractions(graphics);
+		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	@Test
+	public void stashedInventoryItemGetsStashIconWhenInventoryMarkingOn()
+	{
+		when(config.markInventoryItems()).thenReturn(true);
+		stashed();
+
+		render(ITEM_ID, inventoryItem());
+
+		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyStashIconTopRight();
+		verifyNoMoreInteractions(graphics);
+	}
+
+	@Test
+	public void stashedWornItemGetsStashIconWhenEquipmentMarkingOn()
+	{
+		when(config.markEquippedItems()).thenReturn(true);
+		stashed();
+
+		render(ITEM_ID, wornItem());
+
+		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyStashIconTopRight();
 		verifyNoMoreInteractions(graphics);
 	}
 

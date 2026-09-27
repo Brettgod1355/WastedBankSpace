@@ -284,7 +284,7 @@ public class WildcardIgnoreListTest
 	private static ItemManager itemManager()
 	{
 		Map<Integer, ItemComposition> compositions = new HashMap<>();
-		for (int itemId : StorageLocations.getItemIdMap().keySet())
+		for (int itemId : ItemNameFixture.storableItemIds())
 		{
 			ItemComposition composition = mock(ItemComposition.class);
 			when(composition.getName()).thenReturn(NAMES.getOrDefault(itemId, ItemNameFixture.nameOf(itemId)));

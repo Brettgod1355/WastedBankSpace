@@ -34,6 +34,7 @@ import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.model.locations.CapeRack;
 import com.wastedbankspace.model.locations.ForestryKit;
 import com.wastedbankspace.poh.PohStorageTracker;
+import com.wastedbankspace.stash.StashTracker;
 import com.wastedbankspace.ui.WastedBankSpacePanel;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
@@ -120,6 +121,9 @@ public class PanelLocationTextWiringTest
 
 	@Mock
 	private PohStorageTracker pohStorage;
+
+	@Mock
+	private StashTracker stashTracker;
 
 	@Mock
 	private TooltipManager tooltipManager;
