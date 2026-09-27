@@ -64,11 +64,7 @@ public class HouseIconTest
 			// RuneLite's config dropdown labels enum values with Text.titleCase
 			String label = Text.titleCase(icon);
 			assertEquals(icon.getName(), icon.toString());
-			// Known issue: POH's name equals its constant name, so titleCase shows it as "Poh"; drop this once fixed
-			if (icon != HouseIcon.POH)
-			{
-				assertEquals(icon.getName(), label);
-			}
+			assertEquals(icon.getName(), label);
 			assertFalse(icon.name() + " has a blank name", label.trim().isEmpty());
 			assertTrue("two house icons are both called " + label, labels.add(label));
 		}
