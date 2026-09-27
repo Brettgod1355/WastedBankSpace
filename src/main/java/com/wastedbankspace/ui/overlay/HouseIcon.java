@@ -40,7 +40,8 @@ import net.runelite.api.gameval.SpriteID;
 public enum HouseIcon
 {
 	HOUSE_OPTIONS("House Options", SpriteID.OptionsIcons.HOUSE_OPTIONS),
-	POH("POH", SpriteID.OPTIONS_POH_ICON),
+	// The display name must differ from the constant name, or RuneLite title-cases it to "Poh" in the dropdown
+	POH("POH Icon", SpriteID.OPTIONS_POH_ICON),
 	SIDE_ICON("Side Icon", SpriteID.SideIcons.HOUSE),
 	TELEPORT_SPELL("Teleport to House", SpriteID.Magicon2.TELEPORT_TO_HOUSE),
 	MAP_PORTAL("Map House Portal", SpriteID.Mapfunction.HOUSE_PORTAL);
