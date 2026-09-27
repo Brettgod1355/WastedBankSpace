@@ -31,3 +31,8 @@ tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 	options.release.set(11)
 }
+
+// Mockito adds its agent to the boot classpath, which makes class data sharing print a warning; tests don't need it
+tasks.withType(Test).configureEach {
+	jvmArgs '-Xshare:off'
+}
