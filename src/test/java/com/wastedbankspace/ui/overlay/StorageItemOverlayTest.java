@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -143,6 +144,7 @@ public class StorageItemOverlayTest
 		enabledItems = new HashSet<>(Set.of(ITEM_ID));
 		when(plugin.getEnabledItems()).thenReturn(enabledItems);
 		when(plugin.getOverlayImage()).thenReturn(OVERLAY_IMAGE);
+		when(plugin.getStorageLocationText(anyInt(), anyBoolean())).thenReturn(ITEM.getLocation());
 
 		// Same values as the config defaults; each test changes what it is about
 		when(config.markInventoryItems()).thenReturn(false);
