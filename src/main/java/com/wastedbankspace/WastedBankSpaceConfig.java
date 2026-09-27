@@ -29,8 +29,11 @@
 package com.wastedbankspace;
 
 import com.wastedbankspace.banktag.WastedBankTag;
+import com.wastedbankspace.model.stash.StashIconMode;
+import com.wastedbankspace.model.stash.StashUnitFilter;
 import com.wastedbankspace.ui.overlay.HouseIcon;
 import com.wastedbankspace.ui.overlay.OverlayImage;
+import com.wastedbankspace.ui.overlay.StashIcon;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -72,6 +75,10 @@ public interface WastedBankSpaceConfig extends Config
 	/* Bank Interface Keys */
 	String BANK_TAG_TAB_KEY = "bankTagTab";
 	String BANK_TAG_PLACEHOLDERS_KEY = "bankTagPlaceholders";
+
+	/* STASH Unit Keys */
+	String STASH_UNITS_KEY = "stashUnits";
+	String STASH_UNIT_FILTER_KEY = "stashUnitFilter";
 
 	static Set<String> getStorageLocationKeys()
 	{
@@ -131,7 +138,7 @@ public interface WastedBankSpaceConfig extends Config
 		keyName = "markInventoryItems",
 		name = "Mark Inventory Items",
 		description = "Show the overlay image and storage location tooltip on storable items in your inventory."
-			+ " While off, inventory items get no house icon either.",
+			+ " While off, inventory items get no house or STASH icons either.",
 		position = 0,
 		section = inventoryEquipmentConfig
 	)
@@ -144,7 +151,7 @@ public interface WastedBankSpaceConfig extends Config
 		keyName = "markEquippedItems",
 		name = "Mark Equipped Items",
 		description = "Show the overlay image and storage location tooltip on storable items in the worn equipment tab."
-			+ " While off, worn items get no house icon either.",
+			+ " While off, worn items get no house or STASH icons either.",
 		position = 1,
 		section = inventoryEquipmentConfig
 	)
@@ -210,6 +217,91 @@ public interface WastedBankSpaceConfig extends Config
 	default boolean houseIconReplacesMarker()
 	{
 		return false;
+	}
+
+	@ConfigSection(
+		name = "STASH Units",
+		description = "Mark items that can be stored in a STASH unit, the storage for emote clue items."
+			+ " Each unit takes the full set of items its clue asks for.",
+		position = 5
+	)
+	String stashUnitsConfig = "stashUnitsConfig";
+
+	@ConfigItem(
+		keyName = STASH_UNITS_KEY,
+		name = "Mark STASH Unit Items",
+		description = "Flag items that can be stored in a STASH unit, and show a STASH icon on them",
+		position = 0,
+		section = stashUnitsConfig
+	)
+	default boolean stashUnits()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = STASH_UNIT_FILTER_KEY,
+		name = "STASH Units",
+		description = "Only built units: only flag items for STASH units you've built."
+			+ " All units: flag items for every STASH unit.",
+		position = 1,
+		section = stashUnitsConfig
+	)
+	default StashUnitFilter stashUnitFilter()
+	{
+		return StashUnitFilter.BUILT;
+	}
+
+	@ConfigItem(
+		keyName = "stashIconInBank",
+		name = "STASH Icon in Bank",
+		description = "Show a STASH icon on flagged bank items that are already stashed",
+		position = 2,
+		section = stashUnitsConfig
+	)
+	default boolean stashIconInBank()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "stashIconInInventory",
+		name = "STASH Icon in Inventory",
+		description = "Show a STASH icon on flagged inventory and worn equipment items that are already stashed."
+			+ " Needs Mark Inventory Items or Mark Equipped Items on.",
+		position = 3,
+		section = stashUnitsConfig
+	)
+	default boolean stashIconInInventory()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "stashIcon",
+		name = "STASH Icon",
+		description = "Icon shown on items that are already stashed."
+			+ " Open the STASH chart in your POH to update which units are filled.",
+		position = 4,
+		section = stashUnitsConfig
+	)
+	default StashIcon stashIcon()
+	{
+		return StashIcon.CLUE_SCROLL;
+	}
+
+	@ConfigItem(
+		keyName = "stashIconMode",
+		name = "Show STASH Icon When",
+		description = "In at least one unit: the item is in any of the STASH units that take it."
+			+ " In every unit: all of those STASH units are filled."
+			+ " Only the units chosen under STASH Units count.",
+		position = 5,
+		section = stashUnitsConfig
+	)
+	default StashIconMode stashIconMode()
+	{
+		return StashIconMode.ANY_UNIT;
 	}
 
 	@ConfigItem(keyName = FILTER_ENABLED_CHECK_KEY,
