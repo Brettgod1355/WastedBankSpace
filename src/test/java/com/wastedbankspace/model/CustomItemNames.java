@@ -63,7 +63,7 @@ public final class CustomItemNames
 	private static ItemManager itemManager(Map<Integer, String> names)
 	{
 		Map<Integer, ItemComposition> compositions = new HashMap<>();
-		for (int itemId : StorageLocations.getItemIdMap().keySet())
+		for (int itemId : ItemNameFixture.storableItemIds())
 		{
 			ItemComposition composition = mock(ItemComposition.class);
 			when(composition.getName()).thenReturn(names.getOrDefault(itemId, ItemNameFixture.nameOf(itemId)));
