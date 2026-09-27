@@ -130,7 +130,8 @@ public interface WastedBankSpaceConfig extends Config
 	@ConfigItem(
 		keyName = "markInventoryItems",
 		name = "Mark Inventory Items",
-		description = "Show the overlay image and storage location tooltip on storable items in your inventory",
+		description = "Show the overlay image and storage location tooltip on storable items in your inventory."
+			+ " While off, inventory items get no house icon either.",
 		position = 0,
 		section = inventoryEquipmentConfig
 	)
@@ -142,7 +143,8 @@ public interface WastedBankSpaceConfig extends Config
 	@ConfigItem(
 		keyName = "markEquippedItems",
 		name = "Mark Equipped Items",
-		description = "Show the overlay image and storage location tooltip on storable items in the worn equipment tab",
+		description = "Show the overlay image and storage location tooltip on storable items in the worn equipment tab."
+			+ " While off, worn items get no house icon either.",
 		position = 1,
 		section = inventoryEquipmentConfig
 	)
@@ -176,7 +178,7 @@ public interface WastedBankSpaceConfig extends Config
 		keyName = "houseIconInInventory",
 		name = "House Icon in Inventory",
 		description = "Show a house icon on flagged inventory and worn equipment items you already have stored in your"
-			+ " POH costume room. Works independently of the Inventory & Equipment options.",
+			+ " POH costume room. Needs Mark Inventory Items or Mark Equipped Items on.",
 		position = 1,
 		section = alreadyInHouseConfig
 	)
