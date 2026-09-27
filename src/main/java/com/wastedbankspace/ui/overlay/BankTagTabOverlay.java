@@ -31,7 +31,6 @@ package com.wastedbankspace.ui.overlay;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import com.wastedbankspace.banktag.WastedBankTag;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -68,14 +67,13 @@ public class BankTagTabOverlay extends Overlay
 			return null;
 		}
 
-		Widget[] tab = bankTag.findTabWidgets();
-		if (tab == null || tab[0].isHidden())
+		Rectangle bounds = bankTag.getTabBounds();
+		if (bounds == null)
 		{
 			return null;
 		}
 
 		BufferedImage image = config.overlayImage().getIcon();
-		Rectangle bounds = tab[0].getBounds();
 		int x = bounds.x + (bounds.width - ICON_SIZE) / 2;
 		int y = bounds.y + (bounds.height - ICON_SIZE) / 2;
 
