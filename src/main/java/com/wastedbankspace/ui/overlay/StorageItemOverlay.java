@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.api.widgets.WidgetUtil;
@@ -201,7 +200,7 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		{
 			case InterfaceID.BANKMAIN:
 			case InterfaceID.SHARED_BANK:
-				return widget.getParentId() == ComponentID.BANK_ITEM_CONTAINER ? Area.BANK : Area.NONE;
+				return widget.getParentId() == InterfaceID.Bankmain.ITEMS ? Area.BANK : Area.NONE;
 			case InterfaceID.WORNITEMS:
 				return Area.EQUIPMENT;
 			default:

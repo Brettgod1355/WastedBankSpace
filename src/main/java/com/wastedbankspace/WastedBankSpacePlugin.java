@@ -46,7 +46,8 @@ import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOpened;
-import net.runelite.api.widgets.InterfaceID;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.callback.ClientThread;
@@ -415,7 +416,7 @@ public class WastedBankSpacePlugin extends Plugin
 	{
 		pohStorage.onItemContainerChanged(event);
 
-		if (event.getContainerId() == InventoryID.BANK.getId())
+		if (event.getContainerId() == InventoryID.BANK)
 		{
 			isBankOpen = true;
 			log.debug("isBankOpen set to true");
@@ -505,13 +506,13 @@ public class WastedBankSpacePlugin extends Plugin
 			final MenuEntry entry = entries[i];
 			final Widget w = entry.getWidget();
 
-			if (w != null && (WidgetUtil.componentToInterface(w.getId()) == InterfaceID.BANK))
+			if (w != null && (WidgetUtil.componentToInterface(w.getId()) == InterfaceID.BANKMAIN))
 			{
 				final int itemId = w.getItemId();
 				final boolean flagged = !ignoredItemIds.contains(itemId);
 				if (isItemStorable(itemId))
 				{
-					final MenuEntry parent = client.createMenuEntry(i)
+					final MenuEntry parent = client.getMenu().createMenuEntry(i)
 						.setOption(flagged ? "Unflag Item" : "Flag Item")
 						.setTarget(entry.getTarget())
 						.setType(MenuAction.RUNELITE)
