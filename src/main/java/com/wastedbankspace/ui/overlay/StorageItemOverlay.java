@@ -33,8 +33,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import com.wastedbankspace.WastedBankSpacePlugin;
-import com.wastedbankspace.model.StorableItem;
-import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.poh.PohStorageTracker;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -130,12 +128,11 @@ public class StorageItemOverlay extends WidgetItemOverlay
 			return;
 		}
 
-		StorableItem item = StorageLocations.getStorableItem(itemId);
 		Rectangle bounds = itemWidget.getCanvasBounds();
 
 		if (bounds.contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY()))
 		{
-			String text = (inHouse ? "Already stored @ " : "Store @ ") + item.getLocation();
+			String text = (inHouse ? "Already stored @ " : "Store @ ") + plugin.getStorageLocationText(itemId, inHouse);
 			Tooltip t = new Tooltip(ColorUtil.prependColorTag(text, new Color(238, 238, 238)));
 			tooltipManager.add(t);
 		}
