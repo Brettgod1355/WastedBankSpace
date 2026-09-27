@@ -58,6 +58,12 @@ public class StorageLocations
 	private static final Map<Integer, List<StorableItem>> itemLocationsMap = new HashMap<>();
 
 	/**
+	 * The POH costume room storages, whose contents the game reports together in the POH_COSTUMES container
+	 */
+	private static final Set<Class<?>> COSTUME_ROOM_LOCATIONS = Set.of(
+		ArmourCase.class, CapeRack.class, FancyDressBox.class, MagicWardrobe.class, ToyBox.class, TreasureChest.class);
+
+	/**
 	 *	modifiedItemNameMap: Maps item name to item ID after cleaning name string.
 	 *	Note: Use TreeMap instead of hashmap so that we can use string case-insensitive comparison
 	 *		in order to access values
@@ -162,6 +168,15 @@ public class StorageLocations
 	public static boolean isBestInSlot(int id)
 	{
 		return getStorableItems(id).stream().anyMatch(StorableItem::isBis);
+	}
+
+	/**
+	 * @return whether the item's location is one of the POH costume room storages
+	 */
+	public static boolean isCostumeRoomItem(StorableItem item)
+	{
+		Class<?> location = item instanceof Enum ? ((Enum<?>) item).getDeclaringClass() : item.getClass();
+		return COSTUME_ROOM_LOCATIONS.contains(location);
 	}
 
 	public static String getStorableItemName(Integer id)
