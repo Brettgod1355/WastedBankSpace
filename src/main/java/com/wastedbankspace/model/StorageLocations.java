@@ -29,6 +29,7 @@
 package com.wastedbankspace.model;
 
 import com.wastedbankspace.model.locations.*;
+import com.wastedbankspace.model.stash.StashItem;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
@@ -108,20 +109,32 @@ public class StorageLocations
 		log.debug("Registered items from {}", enumClass.getSimpleName());
 	}
 
+	/**
+	 * @return every item a storage location or STASH unit takes. STASH items aren't in itemIdMap, as which of
+	 * them count changes while playing, but their names are still needed for the non-flagged items list.
+	 */
+	private static Set<Integer> allItemIds()
+	{
+		Set<Integer> ids = new HashSet<>(itemIdMap.keySet());
+		StashItem.ALL.forEach(item -> ids.add(item.getItemID()));
+		return ids;
+	}
+
 	public static void prepareStorableItemNames(ItemManager itemManager)
 	{
 		log.debug("Starting prepareStorableItemNames()");
 		log.debug("itemIdMap contents before preparing: {}", itemIdMap.values());
 
-		for (StorableItem item : itemIdMap.values())
+		Set<Integer> ids = allItemIds();
+		for (int id : ids)
 		{
-			String item_name = itemManager.getItemComposition(item.getItemID()).getName();
-			itemNameMap.put(item.getItemID(), item_name);
+			String item_name = itemManager.getItemComposition(id).getName();
+			itemNameMap.put(id, item_name);
 			// Standardize name's to lowercase and remove spaces for case-insensitive comparison
 			String cleaned_item_name = item_name.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
-			modifiedItemNameMap.put(cleaned_item_name, item.getItemID());
+			modifiedItemNameMap.put(cleaned_item_name, id);
 		}
-		if (itemIdMap.size() == itemNameMap.size())
+		if (ids.size() == itemNameMap.size())
 		{
 			log.debug("Successfully prepared storableItemNameMap");
 		}
@@ -133,7 +146,7 @@ public class StorageLocations
 
 	public static boolean isItemStorable(int id)
 	{
-		return itemIdMap.containsKey(id);
+		return itemIdMap.containsKey(id) || !StashItem.getUnits(id).isEmpty();
 	}
 
 	/**
@@ -177,6 +190,14 @@ public class StorageLocations
 	{
 		Class<?> location = item instanceof Enum ? ((Enum<?>) item).getDeclaringClass() : item.getClass();
 		return COSTUME_ROOM_LOCATIONS.contains(location);
+	}
+
+	/**
+	 * @return whether any POH costume room storage takes the item
+	 */
+	public static boolean canGoInCostumeRoom(int id)
+	{
+		return getStorableItems(id).stream().anyMatch(StorageLocations::isCostumeRoomItem);
 	}
 
 	public static String getStorableItemName(Integer id)

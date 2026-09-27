@@ -28,6 +28,7 @@
 
 package com.wastedbankspace.model;
 
+import com.wastedbankspace.model.stash.StashItem;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
@@ -35,7 +36,9 @@ import net.runelite.client.game.ItemManager;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -115,10 +118,20 @@ public final class ItemNameFixture
 		return NAMES.getOrDefault(itemId, "Unnamed item " + itemId);
 	}
 
+	/**
+	 * @return every item whose name StorageLocations prepares: the storage locations' items and the STASH units'
+	 */
+	public static Set<Integer> storableItemIds()
+	{
+		Set<Integer> itemIds = new HashSet<>(StorageLocations.getItemIdMap().keySet());
+		StashItem.ALL.forEach(item -> itemIds.add(item.getItemID()));
+		return itemIds;
+	}
+
 	private static ItemManager itemManager()
 	{
 		Map<Integer, ItemComposition> compositions = new HashMap<>();
-		for (int itemId : StorageLocations.getItemIdMap().keySet())
+		for (int itemId : storableItemIds())
 		{
 			ItemComposition composition = mock(ItemComposition.class);
 			when(composition.getName()).thenReturn(nameOf(itemId));

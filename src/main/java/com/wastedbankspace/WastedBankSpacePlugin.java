@@ -35,6 +35,11 @@ import com.wastedbankspace.model.StorageLocationEnabler;
 import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.poh.PohStorageTracker;
 import com.wastedbankspace.model.locations.*;
+import com.wastedbankspace.model.stash.StashIconMode;
+import com.wastedbankspace.model.stash.StashItem;
+import com.wastedbankspace.model.stash.StashUnit;
+import com.wastedbankspace.model.stash.StashUnitFilter;
+import com.wastedbankspace.stash.StashTracker;
 import com.wastedbankspace.ui.WastedBankSpacePanel;
 import com.wastedbankspace.ui.overlay.BankTagTabOverlay;
 import com.wastedbankspace.ui.overlay.OverlayImage;
@@ -43,9 +48,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.BeforeRender;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOpened;
+import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.ScriptPreFired;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
@@ -111,6 +121,9 @@ public class WastedBankSpacePlugin extends Plugin
 
 	@Inject
 	private PohStorageTracker pohStorage;
+
+	@Inject
+	private StashTracker stashTracker;
 
 	@Inject
 	private TooltipManager tooltipManager;
@@ -227,7 +240,7 @@ public class WastedBankSpacePlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		panel = new WastedBankSpacePanel(client, tooltipManager, config, itemManager, this::processIgnoreListChanged,
-			id -> getStorageLocationText(id, false), scheduledExecutorService);
+			this::getPanelLocationText, scheduledExecutorService);
 		navButton = NavigationButton.builder()
 			.tooltip("Wasted Bank Space")
 			.priority(8)
@@ -240,6 +253,7 @@ public class WastedBankSpacePlugin extends Plugin
 		overlayManager.add(bankTagTabOverlay);
 		bankTag.startUp();
 		pohStorage.load();
+		stashTracker.load();
 
 		log.debug("Attempting to prepare WastedBankSpace upon startup.");
 		if (!prepared)
@@ -363,6 +377,19 @@ public class WastedBankSpacePlugin extends Plugin
 				locations.computeIfAbsent(itemId, id -> new LinkedHashSet<>()).add(item.getLocation());
 			}
 		}
+		// STASH units are named in tooltips from getStashUnits, since which ones are filled changes while playing
+		if (config.stashUnits())
+		{
+			for (StashItem item : StashItem.ALL)
+			{
+				int itemId = item.getItemID();
+				if (isCounted(item.getUnit()) && !ignoredItemIds.contains(itemId)
+					&& !(bisFilter && StorageLocations.isBestInSlot(itemId)))
+				{
+					enabledItems.add(itemId);
+				}
+			}
+		}
 		Map<Integer, String> text = new HashMap<>();
 		locations.forEach((itemId, names) -> text.put(itemId, String.join(" / ", names)));
 		enabledLocationText = Collections.unmodifiableMap(text);
@@ -386,12 +413,99 @@ public class WastedBankSpacePlugin extends Plugin
 				return costumeRoom;
 			}
 		}
+		List<String> names = new ArrayList<>();
 		String enabled = enabledLocationText.get(itemId);
 		if (enabled != null)
 		{
-			return enabled;
+			names.add(enabled);
+		}
+		List<StashUnit> stashUnits = getStashUnits(itemId);
+		names.addAll(stashLocations(stashUnits, false));
+		if (!names.isEmpty())
+		{
+			return String.join(" / ", names);
+		}
+		if (!stashUnits.isEmpty())
+		{
+			// Every STASH unit that takes it is filled, which getStashTooltipLines says
+			return "";
 		}
 		return joinLocations(StorageLocations.getStorableItems(itemId).stream());
+	}
+
+	/**
+	 * Tooltip lines about STASH units, after the one from {@link #getStorageLocationText}: the units that are
+	 * already filled, and, for an item in the POH costume room, the units it could still go in.
+	 */
+	public List<String> getStashTooltipLines(int itemId, boolean inHouse)
+	{
+		List<StashUnit> stashUnits = getStashUnits(itemId);
+		List<String> lines = new ArrayList<>();
+		List<String> unfilled = stashLocations(stashUnits, false);
+		if (inHouse && !unfilled.isEmpty())
+		{
+			lines.add("Store @ " + String.join(" / ", unfilled));
+		}
+		List<String> filled = stashLocations(stashUnits, true);
+		if (!filled.isEmpty())
+		{
+			lines.add("Already stashed @ " + String.join(" / ", filled));
+		}
+		return lines;
+	}
+
+	/**
+	 * Panel tooltip: every location the item counts for, filled STASH units included
+	 */
+	private String getPanelLocationText(int itemId)
+	{
+		List<String> names = new ArrayList<>();
+		String text = getStorageLocationText(itemId, false);
+		if (!text.isEmpty())
+		{
+			names.add(text);
+		}
+		names.addAll(stashLocations(getStashUnits(itemId), true));
+		return String.join(" / ", names);
+	}
+
+	private List<String> stashLocations(List<StashUnit> units, boolean filled)
+	{
+		return units.stream()
+			.filter(unit -> stashTracker.isFilled(unit) == filled)
+			.map(StashUnit::getLocation)
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * @return the STASH units that take the item and count under the STASH Units setting, in unit order; empty
+	 * while STASH units are switched off
+	 */
+	public List<StashUnit> getStashUnits(int itemId)
+	{
+		if (!config.stashUnits())
+		{
+			return Collections.emptyList();
+		}
+		return StashItem.getUnits(itemId).stream().filter(this::isCounted).collect(Collectors.toList());
+	}
+
+	/**
+	 * @return whether the item these units take counts as stashed for the STASH icon: at least one of the units is
+	 * filled, or every one of them is, depending on the config
+	 */
+	public boolean isStashed(List<StashUnit> units)
+	{
+		if (config.stashIconMode() == StashIconMode.EVERY_UNIT)
+		{
+			return !units.isEmpty() && units.stream().allMatch(stashTracker::isFilled);
+		}
+		return units.stream().anyMatch(stashTracker::isFilled);
+	}
+
+	private boolean isCounted(StashUnit unit)
+	{
+		return config.stashUnitFilter() == StashUnitFilter.ALL || stashTracker.isBuilt(unit);
 	}
 
 	private static String joinLocations(Stream<StorableItem> items)
@@ -408,12 +522,56 @@ public class WastedBankSpacePlugin extends Plugin
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
 		pohStorage.load();
+		stashTracker.load();
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		stashTracker.onGameStateChanged(event);
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		stashTracker.onVarbitChanged(event);
+	}
+
+	@Subscribe
+	public void onScriptPreFired(ScriptPreFired event)
+	{
+		stashTracker.onScriptPreFired(event);
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked event)
+	{
+		stashTracker.onMenuOptionClicked(event);
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		stashTracker.onChatMessage(event);
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		// Built units decide which STASH items are flagged under "Only built units"
+		if (stashTracker.onGameTick() && prepared && config.stashUnits()
+			&& config.stashUnitFilter() == StashUnitFilter.BUILT)
+		{
+			recalculateEnabledItems();
+			updateWastedBankSpace();
+		}
 	}
 
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
 		pohStorage.onItemContainerChanged(event);
+		stashTracker.onItemContainerChanged(event);
 
 		if (event.getContainerId() == InventoryID.BANK.getId())
 		{
@@ -471,6 +629,10 @@ public class WastedBankSpacePlugin extends Plugin
 			}
 			updateWastedBankSpace();
 			processIgnoreListChanged(panel.getFilterdItemsText());
+		} else if (eventKey.equals(WastedBankSpaceConfig.STASH_UNITS_KEY)
+			|| eventKey.equals(WastedBankSpaceConfig.STASH_UNIT_FILTER_KEY)) {
+			recalculateEnabledItems();
+			updateWastedBankSpace();
 		} else if (eventKey.equals(WastedBankSpaceConfig.BANK_TAG_TAB_KEY)
 			|| eventKey.equals(WastedBankSpaceConfig.BANK_TAG_PLACEHOLDERS_KEY)) {
 			clientThread.invokeLater(bankTag::sync);

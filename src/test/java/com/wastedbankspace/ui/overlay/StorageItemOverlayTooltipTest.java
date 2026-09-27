@@ -51,6 +51,7 @@ import org.junit.Test;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -206,6 +207,43 @@ public class StorageItemOverlayTooltipTest
 		verify(plugin, never()).getStorageLocationText(anyInt(), anyBoolean());
 	}
 
+	@Test
+	public void longTooltipWrapsBetweenLocations()
+	{
+		// A blue wizard robe goes in two STASH units, whose names together are wider than the game
+		when(plugin.getStorageLocationText(ITEM_ID, false)).thenReturn("Road junction south of Sinclair Mansion"
+			+ " (Easy STASH) / Where the River Ortus meets the Proudspire (Medium STASH)");
+		when(plugin.getStashTooltipLines(ITEM_ID, false)).thenReturn(List.of("Already stashed @ Draynor Village"
+			+ " market (Easy STASH) / Aris' tent (Beginner STASH) / Rimmington mine (Easy STASH)"));
+
+		render(ITEM_ID, bankItem());
+
+		assertEquals(List.of(
+			"Store @ Road junction south of Sinclair Mansion (Easy STASH) /",
+			"Where the River Ortus meets the Proudspire (Medium STASH)",
+			"Already stashed @ Draynor Village market (Easy STASH) /",
+			"Aris' tent (Beginner STASH) / Rimmington mine (Easy STASH)"),
+			tooltipLines());
+	}
+
+	@Test
+	public void shortTooltipLineStaysOnOneLine()
+	{
+		assertEquals(List.of("Store @ " + STORE_TEXT), StorageItemOverlay.wrapTooltipLine("Store @ " + STORE_TEXT));
+	}
+
+	@Test
+	public void wrappedLinesFitUnlessOneLocationIsLongerThanALine()
+	{
+		String longName = "x".repeat(StorageItemOverlay.MAX_TOOLTIP_LINE_LENGTH + 5);
+		List<String> lines = StorageItemOverlay.wrapTooltipLine(
+			"Store @ Cape Rack / " + longName + " / Forestry Kit / Tackle Box / Tool Leprechaun");
+
+		// The long name isn't split, it just gets a line of its own
+		assertEquals(List.of("Store @ Cape Rack /", longName + " /", "Forestry Kit / Tackle Box / Tool Leprechaun"),
+			lines);
+	}
+
 	private static ItemComposition composition(int placeholderId, int placeholderTemplateId)
 	{
 		ItemComposition composition = mock(ItemComposition.class);
@@ -252,6 +290,15 @@ public class StorageItemOverlayTooltipTest
 	{
 		return tooltipManager.getTooltips().stream()
 			.map(tooltip -> Text.removeTags(tooltip.getText()))
+			.collect(Collectors.toList());
+	}
+
+	/** The lines of the one tooltip shown, which removing the tags would run together */
+	private List<String> tooltipLines()
+	{
+		assertEquals(1, tooltipManager.getTooltips().size());
+		return Arrays.stream(tooltipManager.getTooltips().get(0).getText().split("</br>"))
+			.map(Text::removeTags)
 			.collect(Collectors.toList());
 	}
 }
