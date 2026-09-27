@@ -114,18 +114,14 @@ public class StorageItemOverlay extends WidgetItemOverlay
 			itemId = getPlaceholderItemId(itemId);
 		}
 
-		if (!items.contains(itemId))
+		// Outside the bank, Mark Inventory Items and Mark Equipped Items turn off everything, house icon and tooltip too
+		if (!items.contains(itemId) || !shouldMark(area))
 		{
 			return;
 		}
 
-		boolean showMarker = shouldMark(area);
 		boolean inHouse = pohStorage.isStored(itemId);
 		boolean showHouseIcon = inHouse && shouldShowHouseIcon(area);
-		if (!showMarker && !showHouseIcon)
-		{
-			return;
-		}
 
 		Rectangle bounds = itemWidget.getCanvasBounds();
 
@@ -139,7 +135,7 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		// The house icon can take the marker's place in the bottom-right instead of sitting beside it
 		boolean replaceMarker = showHouseIcon && config.houseIconReplacesMarker();
 
-		if (showMarker && !replaceMarker)
+		if (!replaceMarker)
 		{
 			renderRibbon(graphics, plugin.getOverlayImage().getImage(), bounds.x + bounds.width - 12, bounds.y + bounds.height - 12);
 		}
@@ -209,7 +205,8 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	}
 
 	/**
-	 * Bank items are always marked; inventory and worn equipment items only when enabled in the config.
+	 * Bank items are always marked; inventory and worn equipment items only when enabled in the config, which also
+	 * decides whether they get the house icon.
 	 */
 	private boolean shouldMark(Area area)
 	{
