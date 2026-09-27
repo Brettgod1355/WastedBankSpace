@@ -221,15 +221,18 @@ public class WastedBankTag
 	private void addTab()
 	{
 		List<String> tabs = getTabNames();
+		boolean created = Boolean.TRUE.equals(configManager.getConfiguration(WastedBankSpaceConfig.GROUP, TAB_CREATED_KEY, Boolean.class));
 		if (!tabs.contains(TAG_NAME))
 		{
 			tabs.add(TAG_NAME);
 			configManager.setConfiguration(BankTagsPlugin.CONFIG_GROUP, BankTagsPlugin.TAG_TABS_CONFIG, Text.toCSV(tabs));
 			configManager.setConfiguration(WastedBankSpaceConfig.GROUP, TAB_CREATED_KEY, true);
+			created = true;
 		}
 
+		// Only give the tab an icon if this plugin created it; a user's own "wasted" tab keeps whatever it has
 		String iconKey = BankTagsPlugin.TAG_ICON_PREFIX + TAG_NAME;
-		if (configManager.getConfiguration(BankTagsPlugin.CONFIG_GROUP, iconKey) == null)
+		if (created && configManager.getConfiguration(BankTagsPlugin.CONFIG_GROUP, iconKey) == null)
 		{
 			configManager.setConfiguration(BankTagsPlugin.CONFIG_GROUP, iconKey, FALLBACK_ICON_ITEM_ID);
 		}
