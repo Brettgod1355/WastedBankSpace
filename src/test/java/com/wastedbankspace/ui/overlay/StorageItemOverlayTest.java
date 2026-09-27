@@ -470,25 +470,53 @@ public class StorageItemOverlayTest
 	}
 
 	@Test
-	public void inventoryItemInHouseGetsHouseIconEvenWhenInventoryMarkingOff()
+	public void inventoryItemInHouseGetsNothingWhenInventoryMarkingOff()
 	{
 		storedInHouse(ITEM_ID);
 		hover();
 
 		render(ITEM_ID, inventoryItem());
 
+		verifyNoInteractions(graphics);
+		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	@Test
+	public void wornItemInHouseGetsNothingWhenEquipmentMarkingOff()
+	{
+		storedInHouse(ITEM_ID);
+		hover();
+
+		render(ITEM_ID, wornItem());
+
+		verifyNoInteractions(graphics);
+		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	@Test
+	public void inventoryItemInHouseGetsHouseIconNextToMarkerWhenInventoryMarkingOn()
+	{
+		when(config.markInventoryItems()).thenReturn(true);
+		storedInHouse(ITEM_ID);
+		hover();
+
+		render(ITEM_ID, inventoryItem());
+
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 		assertEquals(List.of(alreadyStoredAt()), tooltips());
 	}
 
 	@Test
-	public void wornItemInHouseGetsHouseIconEvenWhenEquipmentMarkingOff()
+	public void wornItemInHouseGetsHouseIconNextToMarkerWhenEquipmentMarkingOn()
 	{
+		when(config.markEquippedItems()).thenReturn(true);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, wornItem());
 
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 	}
@@ -496,6 +524,8 @@ public class StorageItemOverlayTest
 	@Test
 	public void inventoryAndWornHouseIconsHiddenWhenHouseIconInInventoryOff()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
+		when(config.markEquippedItems()).thenReturn(true);
 		when(config.houseIconInInventory()).thenReturn(false);
 		storedInHouse(ITEM_ID);
 		hover();
@@ -503,18 +533,21 @@ public class StorageItemOverlayTest
 		render(ITEM_ID, inventoryItem());
 		render(ITEM_ID, wornItem());
 
-		verifyNoInteractions(graphics);
-		assertEquals(Collections.emptyList(), tooltips());
+		verify(graphics, times(2)).drawImage(same(OVERLAY_IMAGE.getIcon()), eq(MARKER_X), eq(MARKER_Y), isNull());
+		verifyNoMoreInteractions(graphics);
+		assertEquals(List.of(alreadyStoredAt(), alreadyStoredAt()), tooltips());
 	}
 
 	@Test
 	public void inventoryHouseIconDoesNotDependOnBankHouseIconOption()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
 		when(config.houseIconInBank()).thenReturn(false);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, inventoryItem());
 
+		verifyMarkerAt(MARKER_X, MARKER_Y);
 		verifyHouseIconAt(houseSprite, HOUSE_LEFT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
 		verifyNoMoreInteractions(graphics);
 	}
@@ -522,12 +555,14 @@ public class StorageItemOverlayTest
 	@Test
 	public void inventoryItemNotInHouseGetsNoHouseIcon()
 	{
+		when(config.markInventoryItems()).thenReturn(true);
 		hover();
 
 		render(ITEM_ID, inventoryItem());
 
-		verifyNoInteractions(graphics);
-		assertEquals(Collections.emptyList(), tooltips());
+		verifyMarkerAt(MARKER_X, MARKER_Y);
+		verifyNoMoreInteractions(graphics);
+		assertEquals(List.of(storeAt()), tooltips());
 	}
 
 	@Test
@@ -555,17 +590,15 @@ public class StorageItemOverlayTest
 		verifyNoMoreInteractions(graphics);
 	}
 
-	/** Stored items then show only the house icon, where the marker normally goes, even where markers are off */
 	@Test
-	public void houseIconReplacesMarkerAlsoMovesIconOnUnmarkedInventoryItems()
+	public void houseIconReplacingMarkerStillShowsNothingOnUnmarkedInventoryItems()
 	{
 		when(config.houseIconReplacesMarker()).thenReturn(true);
 		storedInHouse(ITEM_ID);
 
 		render(ITEM_ID, inventoryItem());
 
-		verifyHouseIconAt(houseSprite, HOUSE_RIGHT_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
-		verifyNoMoreInteractions(graphics);
+		verifyNoInteractions(graphics);
 	}
 
 	@Test

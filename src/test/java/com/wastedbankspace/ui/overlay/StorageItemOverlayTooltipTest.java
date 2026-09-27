@@ -178,6 +178,7 @@ public class StorageItemOverlayTooltipTest
 		assertEquals(List.of("Store @ " + STORE_TEXT), tooltips());
 
 		tooltipManager.clear();
+		when(config.markEquippedItems()).thenReturn(true);
 		storedInHouse(ITEM_ID);
 		render(ITEM_ID, wornItem());
 		assertEquals(List.of("Already stored @ " + STORED_TEXT), tooltips());
