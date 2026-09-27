@@ -32,6 +32,7 @@ import com.google.common.base.Strings;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
@@ -45,6 +46,7 @@ import net.runelite.client.util.Text;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -162,8 +164,52 @@ public class WastedBankTag
 	@Nullable
 	public Widget[] findTabWidgets()
 	{
+		return findTabWidgets(getTabBar());
+	}
+
+	/**
+	 * @return where the tag tab is on the canvas, or null if the bank tab bar isn't showing it
+	 */
+	@Nullable
+	public Rectangle getTabBounds()
+	{
+		Widget tabBar = getTabBar();
+		Widget[] tab = findTabWidgets(tabBar);
+		if (tab == null || tab[0].isHidden())
+		{
+			return null;
+		}
+
+		// The bank tags plugin recreates the tab widgets every time the bank is built, e.g. on each tab switch and
+		// search keystroke, and a new widget has no canvas location until the client has drawn it. Its place in the
+		// tab bar is set as soon as it's created though, and the tab bar itself is never recreated.
+		Widget background = tab[0];
+		Point origin = tabBar.getCanvasLocation();
+		return new Rectangle(
+			origin.getX() + background.getRelativeX() - tabBar.getScrollX(),
+			origin.getY() + background.getRelativeY() - tabBar.getScrollY(),
+			background.getWidth(),
+			background.getHeight());
+	}
+
+	/**
+	 * @return the widget holding the bank tag tabs, or null if the bank isn't showing it
+	 */
+	@Nullable
+	private Widget getTabBar()
+	{
 		Widget container = client.getWidget(InterfaceID.Bankmain.ITEMS_CONTAINER);
 		if (container == null || container.isHidden() || container.getChildren() == null)
+		{
+			return null;
+		}
+		return container;
+	}
+
+	@Nullable
+	private static Widget[] findTabWidgets(@Nullable Widget container)
+	{
+		if (container == null)
 		{
 			return null;
 		}
