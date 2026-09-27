@@ -31,6 +31,7 @@ package com.wastedbankspace.banktag;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
@@ -47,6 +48,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
+import java.awt.Rectangle;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -518,6 +520,48 @@ public class WastedBankTagTest
 	}
 
 	@Test
+	public void getTabBoundsPlacesTabInTabBarBeforeItHasBeenDrawn()
+	{
+		// Right after the bank tags plugin rebuilds its tabs, as on every tab switch and search keystroke, the new
+		// widgets haven't been drawn yet and have no canvas location of their own
+		Widget background = placedTabWidget(4, 57, 41, 40);
+		when(background.getCanvasLocation()).thenReturn(new Point(0, 0));
+		when(background.getBounds()).thenReturn(new Rectangle(0, 0, 41, 40));
+		Widget container = showTabBar(background, tabWidget(TAG, ItemID.BANK_FILLER));
+		when(container.getCanvasLocation()).thenReturn(new Point(100, 200));
+
+		assertEquals(new Rectangle(104, 257, 41, 40), newBankTag().getTabBounds());
+	}
+
+	@Test
+	public void getTabBoundsFollowsTabBarScroll()
+	{
+		Widget container = showTabBar(placedTabWidget(4, 57, 41, 40), tabWidget(TAG, ItemID.BANK_FILLER));
+		when(container.getCanvasLocation()).thenReturn(new Point(100, 200));
+		when(container.getScrollX()).thenReturn(2);
+		when(container.getScrollY()).thenReturn(10);
+
+		assertEquals(new Rectangle(102, 247, 41, 40), newBankTag().getTabBounds());
+	}
+
+	@Test
+	public void getTabBoundsReturnsNullWhenTabIsNotShowing()
+	{
+		WastedBankTag bankTag = newBankTag();
+
+		assertNull("bank closed", bankTag.getTabBounds());
+
+		showTabBar(tabWidget("herbs", -1), tabWidget("herbs", 249));
+		assertNull("no wasted tab", bankTag.getTabBounds());
+
+		// Tabs scrolled out of the tab bar are hidden
+		Widget background = placedTabWidget(4, 57, 41, 40);
+		when(background.isHidden()).thenReturn(true);
+		showTabBar(background, tabWidget(TAG, ItemID.BANK_FILLER));
+		assertNull("tab scrolled away", bankTag.getTabBounds());
+	}
+
+	@Test
 	public void onBeforeRenderMakesTabIconTransparentWhileEnabled()
 	{
 		Widget background = tabWidget(TAG, -1);
@@ -678,6 +722,17 @@ public class WastedBankTagTest
 		when(widget.getName()).thenReturn("<col=ff9040>" + tag + "</col>");
 		when(widget.getItemId()).thenReturn(itemId);
 		return widget;
+	}
+
+	/** The wasted tab's background, laid out at the given place in the tab bar */
+	private static Widget placedTabWidget(int relativeX, int relativeY, int width, int height)
+	{
+		Widget background = tabWidget(TAG, -1);
+		when(background.getRelativeX()).thenReturn(relativeX);
+		when(background.getRelativeY()).thenReturn(relativeY);
+		when(background.getWidth()).thenReturn(width);
+		when(background.getHeight()).thenReturn(height);
+		return background;
 	}
 
 	private List<String> tabNames()
