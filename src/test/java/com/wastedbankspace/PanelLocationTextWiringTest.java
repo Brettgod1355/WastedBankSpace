@@ -79,6 +79,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -232,6 +233,28 @@ public class PanelLocationTextWiringTest
 		bankContains(WOODCUTTING_CAPE);
 
 		assertEquals("Forestry Kit", tooltipOf(WOODCUTTING_CAPE));
+	}
+
+	@Test
+	public void panelIsFilledAgainWhenThePluginIsTurnedBackOn() throws Exception
+	{
+		forestryKit = true;
+		recalculate();
+		bankContains(LEAVES);
+		assertEquals(List.of(ItemNameFixture.nameOf(LEAVES)), rows());
+
+		// The bank doesn't change while the plugin is off, so nothing else would fill the new panel
+		onSwingThread(() ->
+		{
+			plugin.shutDown();
+			plugin.startUp();
+			return null;
+		});
+		ArgumentCaptor<NavigationButton> navigationButton = ArgumentCaptor.forClass(NavigationButton.class);
+		verify(clientToolbar, times(2)).addNavigation(navigationButton.capture());
+		list = findList((WastedBankSpacePanel) navigationButton.getValue().getPanel());
+
+		assertEquals(List.of(ItemNameFixture.nameOf(LEAVES)), rows());
 	}
 
 	/**

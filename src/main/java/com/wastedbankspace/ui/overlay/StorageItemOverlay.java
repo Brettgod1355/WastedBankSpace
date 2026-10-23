@@ -28,14 +28,11 @@
 
 package com.wastedbankspace.ui.overlay;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.wastedbankspace.WastedBankSpaceConfig;
 import com.wastedbankspace.WastedBankSpacePlugin;
 import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.poh.PohStorageTracker;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
@@ -60,7 +57,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -93,12 +89,6 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	private final Map<StashIcon, BufferedImage> stashIcons = new EnumMap<>(StashIcon.class);
 	/** Item image STASH icons still loading */
 	private final Set<StashIcon> loadingStashIcons = EnumSet.noneOf(StashIcon.class);
-
-	@Getter
-	private final Cache<Integer, BufferedImage> wastedSpaceImages = CacheBuilder.newBuilder()
-		.maximumSize(160)
-		.expireAfterWrite(2, TimeUnit.MINUTES)
-		.build();
 
 	@Inject
 	StorageItemOverlay(Client client, WastedBankSpacePlugin plugin, WastedBankSpaceConfig config, ItemManager itemManager,
@@ -271,10 +261,12 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		{
 			// Overlays render on the client thread, so the sprite can be read directly
 			icon = spriteManager.getSprite(selected.getSpriteId(), 0);
-			if (icon != null)
+			if (icon == null)
 			{
-				stashIcons.put(selected, trim(icon));
+				return null;
 			}
+			icon = trim(icon);
+			stashIcons.put(selected, icon);
 			return icon;
 		}
 

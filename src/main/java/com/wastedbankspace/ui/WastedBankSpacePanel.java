@@ -109,8 +109,9 @@ public class WastedBankSpacePanel extends PluginPanel
 			public void focusLost(FocusEvent e)
 			{
 				this.updateFilterFuture.cancel(false);
+				// The executor only waits; the filter text is read on the Swing thread
 				this.updateFilterFuture = scheduledExecutorService.schedule(
-					WastedBankSpacePanel.this::updatePluginFilter,
+					() -> SwingUtilities.invokeLater(WastedBankSpacePanel.this::updatePluginFilter),
 					250,
 					TimeUnit.MILLISECONDS);
 			}
@@ -150,7 +151,7 @@ public class WastedBankSpacePanel extends PluginPanel
 			"1: Talk to the Wise Old Man",
 			tipTab + "to remove Junk Quest Items",
 			"2: Murky Matt combines ",
-			tipTab + "jewelery charges",
+			tipTab + "jewelry charges",
 			"3: Make item sets at the ge",
 			"3.1: PHat and Mask can be combined",
 			"4: Clue items in PoH (future update)",
