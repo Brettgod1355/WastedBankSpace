@@ -343,6 +343,8 @@ public class BisFilterSharedItemsTest
 		{
 			switchOn(location);
 		}
+		// The plugin replaces its set on every change rather than changing it, so read it again
+		enabled = plugin.getEnabledItems();
 
 		assertFalse("nothing is flagged, so the locations were not switched on", enabled.isEmpty());
 		for (int itemId : sharedBisItems)
@@ -367,7 +369,7 @@ public class BisFilterSharedItemsTest
 	/**
 	 * Goes in the way a config change or an edit of the ignore list does.
 	 *
-	 * @return the live set of items the plugin will flag
+	 * @return the items the plugin will flag
 	 */
 	private Set<Integer> enabledItemsAfterConfigChange()
 	{
@@ -381,7 +383,7 @@ public class BisFilterSharedItemsTest
 	/**
 	 * Goes in the way start-up does, once the client is ready.
 	 *
-	 * @return the live set of items the plugin will flag
+	 * @return the items the plugin will flag
 	 */
 	private Set<Integer> enabledItemsAfterInitializeItemSets() throws Exception
 	{
