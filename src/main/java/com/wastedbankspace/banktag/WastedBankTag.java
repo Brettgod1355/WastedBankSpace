@@ -121,6 +121,21 @@ public class WastedBankTag
 		return registered;
 	}
 
+	/**
+	 * Shows the tag in the open bank, as clicking a tag tab for it would. Must be called on the client thread.
+	 *
+	 * @return false if the tag is switched off in the config, so there's nothing to show
+	 */
+	public boolean open()
+	{
+		if (!registered)
+		{
+			return false;
+		}
+		bankTagsService.openBankTag(TAG_NAME, BankTagsService.OPTION_ALLOW_MODIFICATIONS);
+		return true;
+	}
+
 	private void registerTag()
 	{
 		if (!registered)
