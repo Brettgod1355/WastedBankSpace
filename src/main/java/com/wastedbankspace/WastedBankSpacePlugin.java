@@ -35,13 +35,11 @@ import com.wastedbankspace.model.StorageLocationEnabler;
 import com.wastedbankspace.model.StorageLocations;
 import com.wastedbankspace.model.locations.*;
 import com.wastedbankspace.ui.WastedBankSpacePanel;
-import com.wastedbankspace.ui.overlay.BankTagTabOverlay;
 import com.wastedbankspace.ui.overlay.OverlayImage;
 import com.wastedbankspace.ui.overlay.StorageItemOverlay;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOpened;
@@ -99,9 +97,6 @@ public class WastedBankSpacePlugin extends Plugin
 
 	@Inject
 	private StorageItemOverlay storageItemOverlay;
-
-	@Inject
-	private BankTagTabOverlay bankTagTabOverlay;
 
 	@Inject
 	private WastedBankTag bankTag;
@@ -224,7 +219,6 @@ public class WastedBankSpacePlugin extends Plugin
 		clientToolbar.addNavigation(navButton);
 
 		overlayManager.add(storageItemOverlay);
-		overlayManager.add(bankTagTabOverlay);
 		bankTag.startUp();
 
 		log.debug("Attempting to prepare WastedBankSpace upon startup.");
@@ -262,7 +256,6 @@ public class WastedBankSpacePlugin extends Plugin
 	{
 		clientToolbar.removeNavigation(navButton);
 		overlayManager.remove(storageItemOverlay);
-		overlayManager.remove(bankTagTabOverlay);
 		bankTag.shutDown();
 
 		navButton = null;
@@ -412,12 +405,6 @@ public class WastedBankSpacePlugin extends Plugin
 			//Note this currently is hit when Overlay Image is changed but seems to have no effect on the software
 			log.debug("onConfigChanged(): Event not handled! \nEvent: {}\n", event);
 		}
-	}
-
-	@Subscribe
-	public void onBeforeRender(BeforeRender event)
-	{
-		bankTag.onBeforeRender();
 	}
 
 	@Subscribe

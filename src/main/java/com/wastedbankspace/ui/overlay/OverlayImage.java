@@ -26,7 +26,7 @@ public enum OverlayImage {
     DOT_GREEN("Green Dot", "/014-Dot_green.png");
 
     private final String name;
-    /** Raw image, used for the bank tag tab icon */
+    /** Raw image */
     private final BufferedImage icon;
     private final ImageComponent image;
 
