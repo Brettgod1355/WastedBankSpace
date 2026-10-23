@@ -44,6 +44,8 @@ import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
+import net.runelite.client.config.RuneLiteConfig;
+import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.util.Text;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +61,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -128,9 +132,11 @@ public class StorageItemOverlayTooltipTest
 		// Same values as the config defaults
 		when(config.markInventoryItems()).thenReturn(false);
 		when(config.markEquippedItems()).thenReturn(false);
-		when(config.houseIconInBank()).thenReturn(true);
-		when(config.houseIconInInventory()).thenReturn(true);
+		when(config.houseIconInBank()).thenReturn(false);
+		when(config.houseIconInInventory()).thenReturn(false);
 		when(config.houseIcon()).thenReturn(HouseIcon.TELEPORT_SPELL);
+		// Not the default, which is an item image that loads in the background; a sprite is read straight away
+		when(config.stashIcon()).thenReturn(StashIcon.GREEN_TICK);
 		when(config.houseIconReplacesMarker()).thenReturn(false);
 		when(config.markPlaceholders()).thenReturn(true);
 
@@ -146,7 +152,8 @@ public class StorageItemOverlayTooltipTest
 		when(itemManager.getItemComposition(ITEM_ID)).thenReturn(item);
 		when(itemManager.getItemComposition(PLACEHOLDER_ID)).thenReturn(placeholder);
 
-		overlay = new StorageItemOverlay(client, plugin, config, itemManager, tooltipManager, pohStorage, spriteManager);
+		overlay = new StorageItemOverlay(client, plugin, config, itemManager, tooltipManager, pohStorage, spriteManager,
+			runelite());
 	}
 
 	@Test
@@ -205,6 +212,54 @@ public class StorageItemOverlayTooltipTest
 
 		assertEquals(Collections.emptyList(), tooltips());
 		verify(plugin, never()).getStorageLocationText(anyInt(), anyBoolean());
+	}
+
+	@Test
+	public void hoverBoxPutsTheMarkerInFrontOfWhereToStoreTheItem()
+	{
+		render(ITEM_ID, bankItem());
+
+		assertEquals(Collections.singletonList(OverlayImage.DOT_RED.getIcon()), hoverBox().getIcons());
+	}
+
+	@Test
+	public void hoverBoxPutsTheHouseIconInFrontOfWhereTheItemIsStored()
+	{
+		storedInHouse(ITEM_ID);
+
+		render(ITEM_ID, bankItem());
+
+		assertEquals(Collections.singletonList(spriteManager.getSprite(HouseIcon.TELEPORT_SPELL.getSpriteId(), 0)),
+			hoverBox().getIcons());
+	}
+
+	@Test
+	public void hoverBoxPutsTheStashIconInFrontOfTheFilledUnitsOnly()
+	{
+		BufferedImage tick = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+		tick.setRGB(5, 5, 0xff00ff00);
+		when(spriteManager.getSprite(StashIcon.GREEN_TICK.getSpriteId(), 0)).thenReturn(tick);
+		storedInHouse(ITEM_ID);
+		when(plugin.getStashTooltipLines(ITEM_ID, true)).thenReturn(List.of(
+			"Store @ Draynor Village market (Easy STASH)", "Already stashed @ Aris' tent (Beginner STASH)"));
+
+		render(ITEM_ID, bankItem());
+
+		List<BufferedImage> icons = hoverBox().getIcons();
+		assertEquals(3, icons.size());
+		assertSame("unfilled unit: somewhere to store it", OverlayImage.DOT_RED.getIcon(), icons.get(1));
+		assertEquals("filled unit: the STASH icon, trimmed to its pixels", 1, icons.get(2).getWidth());
+	}
+
+	@Test
+	public void hoverBoxStillHasItsIconsWhenTheyAreNotDrawnOnTheItem()
+	{
+		when(config.houseIconInBank()).thenReturn(false);
+		storedInHouse(ITEM_ID);
+
+		render(ITEM_ID, bankItem());
+
+		assertNotNull(hoverBox().getIcons().get(0));
 	}
 
 	@Test
@@ -289,16 +344,27 @@ public class StorageItemOverlayTooltipTest
 	private List<String> tooltips()
 	{
 		return tooltipManager.getTooltips().stream()
-			.map(tooltip -> Text.removeTags(tooltip.getText()))
+			.map(tooltip -> String.join(" ", ((StorageTooltip) tooltip.getComponent()).getLines()))
 			.collect(Collectors.toList());
+	}
+
+	private StorageTooltip hoverBox()
+	{
+		assertEquals(1, tooltipManager.getTooltips().size());
+		return (StorageTooltip) tooltipManager.getTooltips().get(0).getComponent();
 	}
 
 	/** The lines of the one tooltip shown, which removing the tags would run together */
 	private List<String> tooltipLines()
 	{
 		assertEquals(1, tooltipManager.getTooltips().size());
-		return Arrays.stream(tooltipManager.getTooltips().get(0).getText().split("</br>"))
-			.map(Text::removeTags)
-			.collect(Collectors.toList());
+		return ((StorageTooltip) tooltipManager.getTooltips().get(0).getComponent()).getLines();
+	}
+
+	private static RuneLiteConfig runelite()
+	{
+		RuneLiteConfig runeLiteConfig = mock(RuneLiteConfig.class);
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(ComponentConstants.STANDARD_BACKGROUND_COLOR);
+		return runeLiteConfig;
 	}
 }

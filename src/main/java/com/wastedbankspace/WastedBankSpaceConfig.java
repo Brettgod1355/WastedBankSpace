@@ -162,8 +162,8 @@ public interface WastedBankSpaceConfig extends Config
 
 	@ConfigSection(
 		name = "Already In House",
-		description = "Mark flagged items you already have stored in your POH costume room."
-			+ " Open any costume room storage in your house to update what's stored.",
+		description = "Flagged items you already have stored in your POH costume room. Their hover box says where,"
+			+ " with the house icon. Open any costume room storage in your house to update what's stored.",
 		position = 4
 	)
 	String alreadyInHouseConfig = "alreadyInHouseConfig";
@@ -171,33 +171,35 @@ public interface WastedBankSpaceConfig extends Config
 	@ConfigItem(
 		keyName = "houseIconInBank",
 		name = "House Icon in Bank",
-		description = "Show a house icon on flagged bank items you already have stored in your POH costume room"
-			+ " (treasure chest, armour case, magic wardrobe, cape rack, toy box, fancy dress box)",
+		description = "Also draw the house icon on flagged bank items you already have stored in your POH costume room"
+			+ " (treasure chest, armour case, magic wardrobe, cape rack, toy box, fancy dress box)."
+			+ " Off: it only shows in the hover box.",
 		position = 0,
 		section = alreadyInHouseConfig
 	)
 	default boolean houseIconInBank()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(
 		keyName = "houseIconInInventory",
 		name = "House Icon in Inventory",
-		description = "Show a house icon on flagged inventory and worn equipment items you already have stored in your"
-			+ " POH costume room. Needs Mark Inventory Items or Mark Equipped Items on.",
+		description = "Also draw the house icon on flagged inventory and worn equipment items you already have stored"
+			+ " in your POH costume room. Off: it only shows in the hover box."
+			+ " Needs Mark Inventory Items or Mark Equipped Items on.",
 		position = 1,
 		section = alreadyInHouseConfig
 	)
 	default boolean houseIconInInventory()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(
 		keyName = "houseIcon",
 		name = "House Icon",
-		description = "Icon shown on items already stored in your POH",
+		description = "Icon for items already stored in your POH, in the hover box and on items",
 		position = 2,
 		section = alreadyInHouseConfig
 	)
@@ -210,7 +212,7 @@ public interface WastedBankSpaceConfig extends Config
 		keyName = "houseIconReplacesMarker",
 		name = "Replace Marker With House Icon",
 		description = "For items already stored in your POH, show only the house icon, in the bottom-right where the"
-			+ " overlay image normally goes, instead of both icons",
+			+ " overlay image normally goes, instead of both icons. Needs House Icon in Bank or House Icon in Inventory on.",
 		position = 3,
 		section = alreadyInHouseConfig
 	)
@@ -230,7 +232,7 @@ public interface WastedBankSpaceConfig extends Config
 	@ConfigItem(
 		keyName = STASH_UNITS_KEY,
 		name = "Mark STASH Unit Items",
-		description = "Flag items that can be stored in a STASH unit, and show a STASH icon on them",
+		description = "Flag items that can be stored in a STASH unit. Their hover box names the units.",
 		position = 0,
 		section = stashUnitsConfig
 	)
@@ -255,32 +257,33 @@ public interface WastedBankSpaceConfig extends Config
 	@ConfigItem(
 		keyName = "stashIconInBank",
 		name = "STASH Icon in Bank",
-		description = "Show a STASH icon on flagged bank items that are already stashed",
+		description = "Also draw the STASH icon on flagged bank items that are already stashed."
+			+ " Off: it only shows in the hover box.",
 		position = 2,
 		section = stashUnitsConfig
 	)
 	default boolean stashIconInBank()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(
 		keyName = "stashIconInInventory",
 		name = "STASH Icon in Inventory",
-		description = "Show a STASH icon on flagged inventory and worn equipment items that are already stashed."
-			+ " Needs Mark Inventory Items or Mark Equipped Items on.",
+		description = "Also draw the STASH icon on flagged inventory and worn equipment items that are already stashed."
+			+ " Off: it only shows in the hover box. Needs Mark Inventory Items or Mark Equipped Items on.",
 		position = 3,
 		section = stashUnitsConfig
 	)
 	default boolean stashIconInInventory()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(
 		keyName = "stashIcon",
 		name = "STASH Icon",
-		description = "Icon shown on items that are already stashed."
+		description = "Icon for items that are already stashed, in the hover box and on items."
 			+ " Open the STASH chart in your POH to update which units are filled.",
 		position = 4,
 		section = stashUnitsConfig
@@ -295,7 +298,7 @@ public interface WastedBankSpaceConfig extends Config
 		name = "Show STASH Icon When",
 		description = "In at least one unit: the item is in any of the STASH units that take it."
 			+ " In every unit: all of those STASH units are filled."
-			+ " Only the units chosen under STASH Units count.",
+			+ " Only the units chosen under STASH Units count. For the icon on items; the hover box lists the filled units.",
 		position = 5,
 		section = stashUnitsConfig
 	)

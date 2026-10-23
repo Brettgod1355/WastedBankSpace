@@ -140,6 +140,9 @@ public class WastedBankSpacePlugin extends Plugin
 		return configManager.getConfig(WastedBankSpaceConfig.class);
 	}
 
+	/** Starts the tooltip line naming the filled STASH units an item is already in */
+	public static final String ALREADY_STASHED = "Already stashed @ ";
+
 	private static final BufferedImage ICON = ImageUtil.loadImageResource(WastedBankSpacePlugin.class, "/overlaySmoll.png");
 
 	private int bankContentsHash = 0;
@@ -456,7 +459,7 @@ public class WastedBankSpacePlugin extends Plugin
 		List<String> filled = stashLocations(stashUnits, true);
 		if (!filled.isEmpty())
 		{
-			lines.add("Already stashed @ " + String.join(" / ", filled));
+			lines.add(ALREADY_STASHED + String.join(" / ", filled));
 		}
 		return lines;
 	}

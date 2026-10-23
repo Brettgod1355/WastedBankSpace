@@ -44,6 +44,8 @@ import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
+import net.runelite.client.config.RuneLiteConfig;
+import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.util.Text;
 import org.junit.Before;
 import org.junit.Test;
@@ -174,7 +176,8 @@ public class StorageItemOverlayTest
 		ItemComposition placeholder = composition(ITEM_ID, PLACEHOLDER_TEMPLATE_ID);
 		when(itemManager.getItemComposition(PLACEHOLDER_ID)).thenReturn(placeholder);
 
-		overlay = new StorageItemOverlay(client, plugin, config, itemManager, tooltipManager, pohStorage, spriteManager);
+		overlay = new StorageItemOverlay(client, plugin, config, itemManager, tooltipManager, pohStorage, spriteManager,
+			runelite());
 	}
 
 	private static ItemComposition composition(int placeholderId, int placeholderTemplateId)
@@ -281,7 +284,7 @@ public class StorageItemOverlayTest
 	private List<String> tooltips()
 	{
 		return tooltipManager.getTooltips().stream()
-			.map(tooltip -> Text.removeTags(tooltip.getText()))
+			.map(tooltip -> String.join(" ", ((StorageTooltip) tooltip.getComponent()).getLines()))
 			.collect(Collectors.toList());
 	}
 
@@ -874,5 +877,12 @@ public class StorageItemOverlayTest
 
 		verifyNoInteractions(graphics);
 		assertEquals(Collections.emptyList(), tooltips());
+	}
+
+	private static RuneLiteConfig runelite()
+	{
+		RuneLiteConfig runeLiteConfig = mock(RuneLiteConfig.class);
+		when(runeLiteConfig.overlayBackgroundColor()).thenReturn(ComponentConstants.STANDARD_BACKGROUND_COLOR);
+		return runeLiteConfig;
 	}
 }
