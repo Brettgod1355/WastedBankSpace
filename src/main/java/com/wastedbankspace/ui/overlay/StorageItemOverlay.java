@@ -40,6 +40,7 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.api.widgets.WidgetUtil;
+import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.game.SpriteManager;
@@ -47,7 +48,6 @@ import net.runelite.client.ui.overlay.WidgetItemOverlay;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
-import net.runelite.client.util.ColorUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -57,13 +57,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class StorageItemOverlay extends WidgetItemOverlay
 {
-	/** Size of the house and STASH icons */
-	private static final int ICON_SIZE = 13;
+	/** Size of the house and STASH icons, on items and in the hover box */
+	private static final int ICON_SIZE = StorageTooltip.ICON_SIZE;
 
 	private final Point point;
 
@@ -73,6 +72,7 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	private final ItemManager itemManager;
 	private final TooltipManager tooltipManager;
 	private final PohStorageTracker pohStorage;
+	private final RuneLiteConfig runeLiteConfig;
 
 	private final SpriteManager spriteManager;
 
@@ -92,8 +92,10 @@ public class StorageItemOverlay extends WidgetItemOverlay
 
 	@Inject
 	StorageItemOverlay(Client client, WastedBankSpacePlugin plugin, WastedBankSpaceConfig config, ItemManager itemManager,
-		TooltipManager tooltipManager, PohStorageTracker pohStorage, SpriteManager spriteManager)
+		TooltipManager tooltipManager, PohStorageTracker pohStorage, SpriteManager spriteManager,
+		RuneLiteConfig runeLiteConfig)
 	{
+		this.runeLiteConfig = runeLiteConfig;
 		this.client = client;
 		this.plugin = plugin;
 		this.config = config;
@@ -137,19 +139,10 @@ public class StorageItemOverlay extends WidgetItemOverlay
 
 		if (bounds.contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY()))
 		{
-			List<String> lines = new ArrayList<>();
-			String where = plugin.getStorageLocationText(itemId, inHouse);
-			if (!where.isEmpty())
+			StorageTooltip tooltip = buildTooltip(itemId, inHouse);
+			if (!tooltip.isEmpty())
 			{
-				lines.add((inHouse ? "Already stored @ " : "Store @ ") + where);
-			}
-			lines.addAll(plugin.getStashTooltipLines(itemId, inHouse));
-			if (!lines.isEmpty())
-			{
-				tooltipManager.add(new Tooltip(lines.stream()
-					.flatMap(line -> wrapTooltipLine(line).stream())
-					.map(line -> ColorUtil.prependColorTag(line, TOOLTIP_COLOR))
-					.collect(Collectors.joining("</br>"))));
+				tooltipManager.add(new Tooltip(tooltip));
 			}
 		}
 
@@ -173,6 +166,30 @@ public class StorageItemOverlay extends WidgetItemOverlay
 			boolean topRight = StorageLocations.canGoInCostumeRoom(itemId) || (showHouseIcon && !replaceMarker);
 			renderStashIcon(graphics, bounds, config.stashIcon(), topRight);
 		}
+	}
+
+	/**
+	 * The hover box: where the item can go, with the marker in front, or where in the house it already is, with the
+	 * house icon; then the STASH units, the filled ones with the STASH icon. It always has the icons, whether or not
+	 * they're also drawn on the items.
+	 */
+	private StorageTooltip buildTooltip(int itemId, boolean inHouse)
+	{
+		StorageTooltip tooltip = new StorageTooltip(runeLiteConfig.overlayBackgroundColor(), TOOLTIP_COLOR);
+		BufferedImage marker = plugin.getOverlayImage().getIcon();
+		String where = plugin.getStorageLocationText(itemId, inHouse);
+		if (!where.isEmpty())
+		{
+			tooltip.addRow(inHouse ? getHouseIcon() : marker,
+				wrapTooltipLine((inHouse ? "Already stored @ " : "Store @ ") + where));
+		}
+		for (String line : plugin.getStashTooltipLines(itemId, inHouse))
+		{
+			BufferedImage icon = line.startsWith(WastedBankSpacePlugin.ALREADY_STASHED)
+				? getStashIcon(config.stashIcon()) : marker;
+			tooltip.addRow(icon, wrapTooltipLine(line));
+		}
+		return tooltip;
 	}
 
 	/**
@@ -207,17 +224,10 @@ public class StorageItemOverlay extends WidgetItemOverlay
 	 */
 	private void renderHouseIcon(Graphics2D graphics, Rectangle bounds, boolean bottomRight)
 	{
-		HouseIcon selected = config.houseIcon();
-		BufferedImage icon = houseIcons.get(selected);
+		BufferedImage icon = getHouseIcon();
 		if (icon == null)
 		{
-			// Overlays render on the client thread, so the sprite can be read directly
-			icon = spriteManager.getSprite(selected.getSpriteId(), 0);
-			if (icon == null)
-			{
-				return;
-			}
-			houseIcons.put(selected, icon);
+			return;
 		}
 
 		double scale = (double) ICON_SIZE / Math.max(icon.getWidth(), icon.getHeight());
@@ -225,6 +235,25 @@ public class StorageItemOverlay extends WidgetItemOverlay
 		int height = (int) Math.round(icon.getHeight() * scale);
 		int x = bottomRight ? bounds.x + bounds.width - width : bounds.x;
 		graphics.drawImage(icon, x, bounds.y + bounds.height - height, width, height, null);
+	}
+
+	/**
+	 * @return the configured house icon, or null while its sprite isn't loaded
+	 */
+	private BufferedImage getHouseIcon()
+	{
+		HouseIcon selected = config.houseIcon();
+		BufferedImage icon = houseIcons.get(selected);
+		if (icon == null)
+		{
+			// Overlays render on the client thread, so the sprite can be read directly
+			icon = spriteManager.getSprite(selected.getSpriteId(), 0);
+			if (icon != null)
+			{
+				houseIcons.put(selected, icon);
+			}
+		}
+		return icon;
 	}
 
 	/**

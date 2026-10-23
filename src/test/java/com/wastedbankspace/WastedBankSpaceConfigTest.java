@@ -78,8 +78,9 @@ public class WastedBankSpaceConfigTest
 	public void alreadyInHouseDefaults()
 	{
 		// Agreed with the user: house icon shown everywhere, as the teleport spell, beside the marker
-		assertTrue(defaults.houseIconInBank());
-		assertTrue(defaults.houseIconInInventory());
+		// The hover box shows the house and STASH icons; drawing them on the items too is opt-in
+		assertFalse(defaults.houseIconInBank());
+		assertFalse(defaults.houseIconInInventory());
 		assertEquals(HouseIcon.TELEPORT_SPELL, defaults.houseIcon());
 		assertFalse(defaults.houseIconReplacesMarker());
 	}
