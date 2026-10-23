@@ -63,6 +63,8 @@ public class WastedBankSpacePanel extends PluginPanel
 	private final WastedBankSpaceConfig config;
 	private final JTextArea filtersEditor;
 	private final JLabel numberOfItemsText;
+	/** Under the show button: why it couldn't show the items, or nothing */
+	private final JLabel showWastedHint;
 	private final JList<String> data;
 	private List<Integer> items;
 	private final Function<Integer, String> locationText;
@@ -72,7 +74,8 @@ public class WastedBankSpacePanel extends PluginPanel
 	public WastedBankSpacePanel(Client client, TooltipManager tooltipManager, WastedBankSpaceConfig config,
 								ItemManager itemManager, Consumer<String> filterUi,
 								Function<Integer, String> locationText,
-								ScheduledExecutorService scheduledExecutorService)
+								ScheduledExecutorService scheduledExecutorService,
+								Runnable showWastedItems)
 	{
 		super();
 		this.config = config;
@@ -160,6 +163,17 @@ public class WastedBankSpacePanel extends PluginPanel
 		};
 
 
+		/* SHOW WASTED ITEMS IN THE BANK */
+		JButton showWastedButton = new JButton("Show Wasted Items in Bank");
+		showWastedButton.setToolTipText("Shows only the items wasting space in your open bank,"
+			+ " like a tag tab would. Uses the wasted bank tag.");
+		showWastedButton.addActionListener(e -> showWastedItems.run());
+		showWastedHint = new JLabel();
+
+		add(showWastedButton, c);
+		c.gridy++;
+		add(showWastedHint, c);
+		c.gridy++;
 		add(numberOfItemsText, c);
 		c.gridy++;
 		add(data, c);
@@ -190,6 +204,15 @@ public class WastedBankSpacePanel extends PluginPanel
 		numberOfItemsText.setText("Number of Items Wasting Space: " + this.items.size());
 		data.setListData(names);
 		this.updateUI();
+	}
+
+	/**
+	 * Says why the show button couldn't show the wasted items, e.g. the bank isn't open; empty once it could.
+	 */
+	public void setShowWastedHint(String hint)
+	{
+		// As HTML so a long hint wraps at whole words instead of being cut off
+		showWastedHint.setText(hint.isEmpty() ? "" : "<html>" + hint + "</html>");
 	}
 
 	public void updatePluginFilter()

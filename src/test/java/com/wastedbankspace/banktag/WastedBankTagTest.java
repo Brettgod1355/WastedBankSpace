@@ -149,6 +149,27 @@ public class WastedBankTagTest
 	}
 
 	@Test
+	public void openShowsTheTagInTheBank()
+	{
+		WastedBankTag bankTag = syncedBankTag(true);
+		clearInvocations(bankTagsService);
+
+		assertTrue(bankTag.open());
+
+		verify(bankTagsService).openBankTag(TAG, BankTagsService.OPTION_ALLOW_MODIFICATIONS);
+	}
+
+	@Test
+	public void openDoesNothingWhileTheTagIsSwitchedOff()
+	{
+		WastedBankTag bankTag = syncedBankTag(false);
+
+		assertFalse(bankTag.open());
+
+		verify(bankTagsService, never()).openBankTag(anyString(), anyInt());
+	}
+
+	@Test
 	public void shutDownUnregistersTagAndRefreshesTheViewedTag()
 	{
 		viewTag(TAG);

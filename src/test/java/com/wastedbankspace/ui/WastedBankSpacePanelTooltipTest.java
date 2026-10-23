@@ -145,7 +145,9 @@ public class WastedBankSpacePanelTooltipTest
 		return new WastedBankSpacePanel(mock(Client.class), new TooltipManager(), config, mock(ItemManager.class),
 			filter ->
 			{
-			}, locationText, mock(ScheduledExecutorService.class));
+			}, locationText, mock(ScheduledExecutorService.class), () ->
+			{
+			});
 	}
 
 	private static MouseEvent mouseOver(Component component, int x, int y)

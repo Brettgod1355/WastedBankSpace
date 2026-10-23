@@ -240,7 +240,7 @@ public class WastedBankSpacePlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		panel = new WastedBankSpacePanel(client, tooltipManager, config, itemManager, this::processIgnoreListChanged,
-			this::getPanelLocationText, scheduledExecutorService);
+			this::getPanelLocationText, scheduledExecutorService, this::showWastedItemsInBank);
 		if (!itemsInBank.isEmpty())
 		{
 			// Turned back on: the bank hasn't changed, so fill the new panel from what was there
@@ -663,6 +663,35 @@ public class WastedBankSpacePlugin extends Plugin
 				return;
 			}
 		}
+	}
+
+	/**
+	 * The panel's show button: shows the flagged items in the open bank through the wasted bank tag, or says in the
+	 * panel why it can't. Called on the Swing thread.
+	 */
+	private void showWastedItemsInBank()
+	{
+		clientThread.invoke(() ->
+		{
+			String hint;
+			if (!isBankOpen())
+			{
+				hint = "Open your bank first";
+			}
+			else if (!bankTag.open())
+			{
+				hint = "Turn on Wasted Bank Tag in the settings";
+			}
+			else
+			{
+				hint = "";
+			}
+			WastedBankSpacePanel panel = this.panel;
+			if (panel != null)
+			{
+				SwingUtilities.invokeLater(() -> panel.setShowWastedHint(hint));
+			}
+		});
 	}
 
 	/**
