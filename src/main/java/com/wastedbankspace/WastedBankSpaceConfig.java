@@ -524,8 +524,8 @@ public interface WastedBankSpaceConfig extends Config
 
 	@ConfigItem(
 		keyName = BANK_TAG_PLACEHOLDERS_KEY,
-		name = "Show Placeholders in Wasted Tab",
-		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag tab",
+		name = "Show Placeholders in Wasted Tag",
+		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag",
 		position = 3,
 		section = bankInterfaceConfig
 	)
