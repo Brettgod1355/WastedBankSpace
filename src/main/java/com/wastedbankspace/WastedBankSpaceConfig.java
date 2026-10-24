@@ -590,9 +590,10 @@ public interface WastedBankSpaceConfig extends Config
 
 	@ConfigItem(
 		keyName = BANK_TAG_TAB_KEY,
-		name = "Wasted Bank Tag Tab",
-		description = "Adds a '" + WastedBankTag.TAG_NAME + "' bank tag tab showing every flagged item, using the overlay image as its icon."
-			+ " Also searchable with tag:" + WastedBankTag.TAG_NAME + ". Requires the Bank Tags plugin.",
+		name = "Wasted Bank Tag",
+		description = "Adds a '" + WastedBankTag.TAG_NAME + "' bank tag holding every flagged item. Search the bank for tag:"
+			+ WastedBankTag.TAG_NAME + ", or make a tag tab named '" + WastedBankTag.TAG_NAME + "', to see them."
+			+ " Requires the Bank Tags plugin.",
 		position = 1,
 		section = bankInterfaceConfig
 	)
@@ -615,8 +616,8 @@ public interface WastedBankSpaceConfig extends Config
 
 	@ConfigItem(
 		keyName = BANK_TAG_PLACEHOLDERS_KEY,
-		name = "Show Placeholders in Wasted Tab",
-		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag tab",
+		name = "Show Placeholders in Wasted Tag",
+		description = "Include bank placeholders of storable items in the '" + WastedBankTag.TAG_NAME + "' bank tag",
 		position = 3,
 		section = bankInterfaceConfig
 	)
